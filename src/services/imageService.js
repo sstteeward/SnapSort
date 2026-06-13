@@ -2,7 +2,7 @@
 // Handles image picking, thumbnail generation, and file management
 
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Crypto from 'expo-crypto';
 import { THUMBNAIL, MAX_IMPORT_BATCH } from '../utils/constants';
@@ -114,33 +114,44 @@ export const generateThumbnail = async (sourceUri, id) => {
  * @returns {object} Screenshot metadata object
  */
 export const processImage = async (asset, category = 'others') => {
-  const id = await generateId();
+  try {
+    const id = await generateId();
 
-  // Save a local copy of the image
-  const localUri = await saveImage(asset.uri, id);
+    // Save a local copy of the image
+    const localUri = await saveImage(asset.uri, id);
 
-  // Generate thumbnail
-  const thumbnailUri = await generateThumbnail(asset.uri, id);
+    // Generate thumbnail
+    let thumbnailUri = '';
+    try {
+      thumbnailUri = await generateThumbnail(asset.uri, id);
+    } catch (thumbError) {
+      console.warn('Thumbnail generation failed, using original:', thumbError);
+      thumbnailUri = localUri;
+    }
 
-  // Get file info
-  const fileInfo = await FileSystem.getInfoAsync(localUri);
+    // Get file info
+    const fileInfo = await FileSystem.getInfoAsync(localUri);
 
-  // Generate a title from filename or date
-  const title = generateTitle(asset.fileName || asset.uri);
+    // Generate a title from filename or date
+    const title = generateTitle(asset.fileName || asset.uri);
 
-  return {
-    id,
-    uri: localUri,
-    thumbnailUri,
-    title,
-    category,
-    notes: '',
-    tags: '',
-    isFavorite: false,
-    width: asset.width || 0,
-    height: asset.height || 0,
-    fileSize: fileInfo.size || 0,
-  };
+    return {
+      id,
+      uri: localUri,
+      thumbnailUri,
+      title,
+      category,
+      notes: '',
+      tags: '',
+      isFavorite: false,
+      width: asset.width || 0,
+      height: asset.height || 0,
+      fileSize: fileInfo.size || 0,
+    };
+  } catch (error) {
+    console.error('processImage failed:', error);
+    throw error;
+  }
 };
 
 /**

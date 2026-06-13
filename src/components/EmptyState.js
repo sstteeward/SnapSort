@@ -49,7 +49,7 @@ const EmptyState = ({
         <Ionicons
           name={icon}
           size={48}
-          color={iconColor || theme.primary}
+          color="black"
         />
       </View>
 

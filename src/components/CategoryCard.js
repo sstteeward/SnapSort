@@ -29,7 +29,7 @@ const CategoryCard = ({ category, onPress, compact = false }) => {
         ]}
       >
         <View style={[styles.compactIcon, { backgroundColor: category.color + '25' }]}>
-          <Ionicons name={category.icon} size={18} color={category.color} />
+          <Ionicons name={category.icon} size={18} color="black" />
         </View>
         <Text style={[styles.compactName, { color: theme.text }]} numberOfLines={1}>
           {category.name}
@@ -55,7 +55,7 @@ const CategoryCard = ({ category, onPress, compact = false }) => {
     >
       {/* Icon */}
       <View style={[styles.iconContainer, { backgroundColor: category.color + '20' }]}>
-        <Ionicons name={category.icon} size={26} color={category.color} />
+        <Ionicons name={category.icon} size={26} color="black" />
       </View>
 
       {/* Name */}

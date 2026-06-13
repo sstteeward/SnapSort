@@ -1,24 +1,24 @@
-// SnapSort Design System & Constants
+np// SnapSort Design System & Constants
 
 export const COLORS = {
   // Dark theme
   dark: {
     background: '#F8FAFC', // Neutral
-    surface: '#FFFFFF',    
-    surfaceLight: '#F1F5F9', 
-    surfaceHover: '#E2E8F0', 
+    surface: '#FFFFFF',
+    surfaceLight: '#F1F5F9',
+    surfaceHover: '#E2E8F0',
     primary: '#3B82F6',    // Primary Blue
-    primaryLight: '#3B82F6', 
+    primaryLight: '#3B82F6',
     primaryDark: '#3B82F6',
     accent: '#F8A008',     // Tertiary Orange
     accentLight: '#F8A008',
-    success: '#10B981',    
-    warning: '#F8A008',    
-    error: '#DC2626',      
-    text: '#0F172A',       
+    success: '#10B981',
+    warning: '#F8A008',
+    error: '#DC2626',
+    text: '#0F172A',
     textSecondary: '#A5A9A8', // Secondary Grey
-    textMuted: '#94A3B8',  
-    border: '#E2E8F0',     
+    textMuted: '#94A3B8',
+    border: '#E2E8F0',
     card: '#FFFFFF',
     overlay: 'rgba(15, 23, 42, 0.4)',
     tabBar: '#FFFFFF',
@@ -29,21 +29,21 @@ export const COLORS = {
   // Light theme (Strict match to image)
   light: {
     background: '#F8FAFC', // Neutral
-    surface: '#FFFFFF',    
-    surfaceLight: '#F1F5F9', 
-    surfaceHover: '#E2E8F0', 
+    surface: '#FFFFFF',
+    surfaceLight: '#F1F5F9',
+    surfaceHover: '#E2E8F0',
     primary: '#3B82F6',    // Primary Blue
-    primaryLight: '#3B82F6', 
+    primaryLight: '#3B82F6',
     primaryDark: '#3B82F6',
     accent: '#F8A008',     // Tertiary Orange
     accentLight: '#F8A008',
-    success: '#10B981',    
+    success: '#10B981',
     warning: '#F8A008',    // Tertiary Orange
-    error: '#DC2626',      
-    text: '#0F172A',       
+    error: '#DC2626',
+    text: '#0F172A',
     textSecondary: '#A5A9A8', // Secondary Grey
-    textMuted: '#94A3B8',  
-    border: '#E2E8F0',     
+    textMuted: '#94A3B8',
+    border: '#E2E8F0',
     card: '#FFFFFF',
     overlay: 'rgba(15, 23, 42, 0.4)',
     tabBar: '#FFFFFF',

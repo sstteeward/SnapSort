@@ -186,7 +186,7 @@ const ScreenshotDetailsScreen = ({ navigation, route }) => {
             style={[styles.metadataCard, { backgroundColor: theme.card, borderColor: theme.border }]}
           >
             <View style={[styles.metaIcon, { backgroundColor: (category?.color || theme.primary) + '20' }]}>
-              <Ionicons name={category?.icon || 'folder-outline'} size={16} color={category?.color || theme.primary} />
+              <Ionicons name={category?.icon || 'folder-outline'} size={16} color="black" />
             </View>
             <View style={styles.metaContent}>
               <Text style={[styles.metaLabel, { color: theme.textMuted }]}>Category</Text>
@@ -224,12 +224,12 @@ const ScreenshotDetailsScreen = ({ navigation, route }) => {
                   },
                 ]}
               >
-                <Ionicons name={cat.icon} size={18} color={cat.color} />
+                <Ionicons name={cat.icon} size={18} color="black" />
                 <Text style={[styles.categoryOptionText, { color: theme.text }]}>
                   {cat.name}
                 </Text>
                 {cat.id === screenshot.category && (
-                  <Ionicons name="checkmark-circle" size={18} color={cat.color} />
+                  <Ionicons name="checkmark-circle" size={18} color="black" />
                 )}
               </Pressable>
             ))}

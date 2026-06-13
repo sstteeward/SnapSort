@@ -74,7 +74,7 @@ const CategoryDetailsScreen = ({ navigation, route }) => {
           <View style={styles.headerRow}>
             {category && (
               <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
-                <Ionicons name={category.icon} size={20} color={category.color} />
+                <Ionicons name={category.icon} size={20} color="black" />
               </View>
             )}
             <Text style={[styles.title, { color: theme.text }]}>

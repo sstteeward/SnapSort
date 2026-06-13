@@ -63,7 +63,7 @@ const StatCard = ({ icon, label, value, color, theme }) => {
       ]}
     >
       <View style={[styles.statIcon, { backgroundColor: color + '20' }]}>
-        <Ionicons name={icon} size={20} color={color} />
+        <Ionicons name={icon} size={20} color="black" />
       </View>
       <Text style={[styles.statValue, { color: theme.text }]}>{value}</Text>
       <Text style={[styles.statLabel, { color: theme.textMuted }]}>{label}</Text>
@@ -193,18 +193,6 @@ const HomeScreen = ({ navigation }) => {
             </Text>
             <Text style={[styles.headerTitle, { color: theme.text }]}>SnapSort</Text>
           </View>
-          <Pressable
-            onPress={handleImport}
-            style={({ pressed }) => [
-              styles.importButton,
-              {
-                backgroundColor: theme.primary,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-          >
-            <Ionicons name="add" size={22} color="#FFFFFF" />
-          </Pressable>
         </View>
 
         {/* Search */}
