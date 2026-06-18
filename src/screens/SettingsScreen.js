@@ -149,7 +149,7 @@ const SettingsScreen = () => {
         </View>
 
         <Text style={[styles.footer, { color: theme.textMuted }]}>
-          Built for lazy organizers.
+          Built by ssttewards.
         </Text>
       </ScrollView>
     </View>
