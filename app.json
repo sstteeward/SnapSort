@@ -12,7 +12,6 @@
       "bundleIdentifier": "com.ssttewards.snapsort",
       "infoPlist": {
         "UIBackgroundModes": [
-          "fetch",
           "fetch"
         ],
         "NSPhotoLibraryUsageDescription": "Allow SnapSort to access your photos to detect and import screenshots.",
@@ -44,6 +43,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      "expo-dev-client",
       "expo-sqlite",
       "expo-font",
       [

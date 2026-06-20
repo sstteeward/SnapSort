@@ -121,8 +121,12 @@ const ScreenshotDetector = () => {
   }, [fetchLatestScreenshot, showDetection]);
 
   useEffect(() => {
-    const subscription = addScreenshotListener(handleScreenshotDetected);
-    return () => subscription.remove();
+    try {
+      const subscription = addScreenshotListener(handleScreenshotDetected);
+      return () => subscription.remove();
+    } catch (e) {
+      console.warn('expo-screen-capture not available (expected in Expo Go):', e.message);
+    }
   }, [handleScreenshotDetected]);
 
   // ==========================================

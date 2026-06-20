@@ -40,75 +40,75 @@ const CategoryDetailsScreen = ({ navigation, route }) => {
     (screenshot) => {
       navigation.navigate(SCREEN_NAMES.SCREENSHOT_DETAILS, { id: screenshot.id });
     },
-    [navigation]
+  [navigation]
   );
 
-  const renderItem = useCallback(
-    ({ item }) => (
-      <ScreenshotCard screenshot={item} onPress={handleScreenshotPress} />
-    ),
-    [handleScreenshotPress]
-  );
+const renderItem = useCallback(
+  ({ item }) => (
+    <ScreenshotCard screenshot={item} onPress={handleScreenshotPress} />
+  ),
+  [handleScreenshotPress]
+);
 
-  return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <StatusBar
-        barStyle={darkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={theme.background}
-      />
+return (
+  <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+    <StatusBar
+      barStyle={darkMode ? 'light-content' : 'dark-content'}
+      backgroundColor={theme.background}
+    />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [
-            styles.backButton,
-            { backgroundColor: theme.surfaceLight, opacity: pressed ? 0.7 : 1 },
-          ]}
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </Pressable>
+    {/* Header */}
+    <View style={styles.header}>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        style={({ pressed }) => [
+          styles.backButton,
+          { backgroundColor: theme.surfaceLight, opacity: pressed ? 0.7 : 1 },
+        ]}
+        hitSlop={8}
+      >
+        <Ionicons name="chevron-back" size={20} color={theme.text} />
+      </Pressable>
 
-        <View style={styles.headerInfo}>
-          <View style={styles.headerRow}>
-            {category && (
-              <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
-                <Ionicons name={category.icon} size={20} color="black" />
-              </View>
-            )}
-            <Text style={[styles.title, { color: theme.text }]}>
-              {category ? category.name : 'Category'}
-            </Text>
-          </View>
-          <Text style={[styles.count, { color: theme.textMuted }]}>
-            {screenshots.length} {screenshots.length === 1 ? 'screenshot' : 'screenshots'}
+      <View style={styles.headerInfo}>
+        <View style={styles.headerRow}>
+          {category && (
+            <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
+              <Ionicons name={category.icon} size={20} color="black" />
+            </View>
+          )}
+          <Text style={[styles.title, { color: theme.text }]}>
+            {category ? category.name : 'Category'}
           </Text>
         </View>
+        <Text style={[styles.count, { color: theme.textMuted }]}>
+          {screenshots.length} {screenshots.length === 1 ? 'screenshot' : 'screenshots'}
+        </Text>
       </View>
-
-      {/* Screenshot Grid */}
-      <FlatList
-        data={screenshots}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={styles.gridRow}
-        contentContainerStyle={styles.gridContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <EmptyState
-            icon={category ? category.icon : 'folder-outline'}
-            title={`No ${category ? category.name : ''} screenshots`}
-            message="Screenshots assigned to this category will appear here."
-            iconColor={category ? category.color : undefined}
-            actionLabel="Import Screenshots"
-            onAction={() => navigation.navigate(SCREEN_NAMES.IMPORT)}
-          />
-        }
-      />
     </View>
-  );
+
+    {/* Screenshot Grid */}
+    <FlatList
+      data={screenshots}
+      renderItem={renderItem}
+      keyExtractor={(item) => item.id}
+      numColumns={2}
+      columnWrapperStyle={styles.gridRow}
+      contentContainerStyle={styles.gridContent}
+      showsVerticalScrollIndicator={false}
+      ListEmptyComponent={
+        <EmptyState
+          icon={category ? category.icon : 'folder-outline'}
+          title={`No ${category ? category.name : ''} screenshots`}
+          message="Screenshots assigned to this category will appear here."
+          iconColor={category ? category.color : undefined}
+          actionLabel="Import Screenshots"
+          onAction={() => navigation.navigate(SCREEN_NAMES.IMPORT)}
+        />
+      }
+    />
+  </View>
+);
 };
 
 const styles = StyleSheet.create({

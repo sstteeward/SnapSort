@@ -1,4 +1,4 @@
-np// SnapSort Design System & Constants
+// SnapSort Design System & Constants
 
 export const COLORS = {
   // Dark theme

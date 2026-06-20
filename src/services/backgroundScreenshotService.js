@@ -52,54 +52,58 @@ export const getLastKnownAssetId = async () => {
 // --- Background task definition ---
 // This MUST be called at module level (outside components) for TaskManager
 
-TaskManager.defineTask(TASK_NAME, async () => {
-  try {
-    // Check media library permission
-    const { status } = await MediaLibrary.getPermissionsAsync();
-    if (status !== 'granted') {
-      return BackgroundFetch.BackgroundFetchResult.NoData;
-    }
-
-    // Get the most recent photo
-    const { assets } = await MediaLibrary.getAssetsAsync({
-      first: 1,
-      sortBy: [MediaLibrary.SortBy.creationTime],
-      mediaType: MediaLibrary.MediaType.photo,
-    });
-
-    if (assets.length === 0) {
-      return BackgroundFetch.BackgroundFetchResult.NoData;
-    }
-
-    const latestAsset = assets[0];
-    const state = await readState();
-
-    // Is this a new photo we haven't seen?
-    if (latestAsset.id !== state.lastAssetId) {
-      // Check if the photo is recent (within the last 30 minutes)
-      const photoAgeMs = Date.now() - latestAsset.creationTime * 1000;
-      if (photoAgeMs < 30 * 60 * 1000) {
-        // New screenshot found! Send notification
-        await sendScreenshotNotification({
-          id: latestAsset.id,
-          filename: latestAsset.filename,
-          width: latestAsset.width,
-          height: latestAsset.height,
-        });
-
-        // Update state
-        await saveLastKnownAssetId(latestAsset.id);
-
-        return BackgroundFetch.BackgroundFetchResult.NewData;
+try {
+  TaskManager.defineTask(TASK_NAME, async () => {
+    try {
+      // Check media library permission
+      const { status } = await MediaLibrary.getPermissionsAsync();
+      if (status !== 'granted') {
+        return BackgroundFetch.BackgroundFetchResult.NoData;
       }
-    }
 
-    return BackgroundFetch.BackgroundFetchResult.NoData;
-  } catch (error) {
-    console.error('Background screenshot check failed:', error);
-    return BackgroundFetch.BackgroundFetchResult.Failed;
-  }
-});
+      // Get the most recent photo
+      const { assets } = await MediaLibrary.getAssetsAsync({
+        first: 1,
+        sortBy: [MediaLibrary.SortBy.creationTime],
+        mediaType: MediaLibrary.MediaType.photo,
+      });
+
+      if (assets.length === 0) {
+        return BackgroundFetch.BackgroundFetchResult.NoData;
+      }
+
+      const latestAsset = assets[0];
+      const state = await readState();
+
+      // Is this a new photo we haven't seen?
+      if (latestAsset.id !== state.lastAssetId) {
+        // Check if the photo is recent (within the last 30 minutes)
+        const photoAgeMs = Date.now() - latestAsset.creationTime * 1000;
+        if (photoAgeMs < 30 * 60 * 1000) {
+          // New screenshot found! Send notification
+          await sendScreenshotNotification({
+            id: latestAsset.id,
+            filename: latestAsset.filename,
+            width: latestAsset.width,
+            height: latestAsset.height,
+          });
+
+          // Update state
+          await saveLastKnownAssetId(latestAsset.id);
+
+          return BackgroundFetch.BackgroundFetchResult.NewData;
+        }
+      }
+
+      return BackgroundFetch.BackgroundFetchResult.NoData;
+    } catch (error) {
+      console.error('Background screenshot check failed:', error);
+      return BackgroundFetch.BackgroundFetchResult.Failed;
+    }
+  });
+} catch (e) {
+  console.warn('Failed to define background task (expected in Expo Go):', e);
+}
 
 /**
  * Register the background fetch task with the OS.
@@ -122,7 +126,9 @@ export const registerBackgroundTask = async () => {
     console.log('Background screenshot task registered successfully');
     return true;
   } catch (error) {
-    console.error('Failed to register background task:', error);
+    // Background Fetch is not available in Expo Go — this is expected.
+    // It will work in a development or production build with native modules.
+    console.log('Background task not available (expected in Expo Go):', error.message);
     return false;
   }
 };

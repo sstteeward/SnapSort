@@ -93,6 +93,7 @@ export const ScreenshotProvider = ({ children }) => {
       } catch (error) {
         console.error('Failed to initialize:', error);
         dispatch({ type: ACTIONS.SET_LOADING, payload: false });
+        dispatch({ type: ACTIONS.SET_INITIALIZED });
       }
     };
     init();
