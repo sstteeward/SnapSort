@@ -1,4 +1,5 @@
-// ScreenshotDetailsScreen — Full image preview with metadata editing
+// ScreenshotDetailsScreen — iOS 26 Liquid Glass full image preview
+// Glass header buttons, metadata cards, and category picker
 
 import React, { useState, useCallback, useMemo } from 'react';
 import {
@@ -12,7 +13,9 @@ import {
   Alert,
   StatusBar,
   Dimensions,
+  Platform,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -25,9 +28,34 @@ import {
   BORDER_RADIUS,
   SHADOWS,
   CATEGORIES,
+  GLASS,
 } from '../utils/constants';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const GlassHeaderButton = ({ onPress, iconName, iconColor, children }) => {
+  const isAndroid = Platform.OS === 'android';
+  const content = children || <Ionicons name={iconName} size={20} color={iconColor || '#FFFFFF'} />;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.headerButtonWrap,
+        { opacity: pressed ? 0.7 : 1 },
+      ]}
+      hitSlop={8}
+    >
+      {isAndroid ? (
+        <View style={styles.headerButtonFallback}>{content}</View>
+      ) : (
+        <BlurView intensity={30} tint="dark" style={styles.headerButtonBlur}>
+          {content}
+        </BlurView>
+      )}
+    </Pressable>
+  );
+};
 
 const ScreenshotDetailsScreen = ({ navigation, route }) => {
   const { id } = route.params;
@@ -92,11 +120,9 @@ const ScreenshotDetailsScreen = ({ navigation, route }) => {
   if (!screenshot) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-        <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
+        <StatusBar barStyle="light-content" />
         <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={20} color={theme.text} />
-          </Pressable>
+          <GlassHeaderButton onPress={() => navigation.goBack()} iconName="chevron-back" />
         </View>
         <View style={styles.notFound}>
           <Ionicons name="alert-circle-outline" size={48} color={theme.textMuted} />
@@ -114,47 +140,23 @@ const ScreenshotDetailsScreen = ({ navigation, route }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle="light-content" />
 
       {/* Header bar */}
       <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={({ pressed }) => [
-            styles.headerButton,
-            { backgroundColor: theme.surfaceLight, opacity: pressed ? 0.7 : 1 },
-          ]}
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={20} color={theme.text} />
-        </Pressable>
+        <GlassHeaderButton onPress={() => navigation.goBack()} iconName="chevron-back" />
 
         <View style={styles.headerActions}>
-          <Pressable
+          <GlassHeaderButton
             onPress={() => toggleFavorite(id)}
-            style={({ pressed }) => [
-              styles.headerButton,
-              { backgroundColor: theme.surfaceLight, opacity: pressed ? 0.7 : 1 },
-            ]}
-            hitSlop={8}
-          >
-            <Ionicons
-              name={screenshot.isFavorite ? 'heart' : 'heart-outline'}
-              size={20}
-              color={screenshot.isFavorite ? COLORS.dark.accent : theme.text}
-            />
-          </Pressable>
-
-          <Pressable
+            iconName={screenshot.isFavorite ? 'heart' : 'heart-outline'}
+            iconColor={screenshot.isFavorite ? '#FF453A' : '#FFFFFF'}
+          />
+          <GlassHeaderButton
             onPress={handleDelete}
-            style={({ pressed }) => [
-              styles.headerButton,
-              { backgroundColor: theme.surfaceLight, opacity: pressed ? 0.7 : 1 },
-            ]}
-            hitSlop={8}
-          >
-            <Ionicons name="trash-outline" size={20} color={theme.error} />
-          </Pressable>
+            iconName="trash-outline"
+            iconColor="#FF453A"
+          />
         </View>
       </View>
 
@@ -183,10 +185,10 @@ const ScreenshotDetailsScreen = ({ navigation, route }) => {
           {/* Category */}
           <Pressable
             onPress={() => setShowCategoryPicker(!showCategoryPicker)}
-            style={[styles.metadataCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+            style={[styles.metadataCard, { backgroundColor: GLASS.background, borderColor: GLASS.border }]}
           >
             <View style={[styles.metaIcon, { backgroundColor: (category?.color || theme.primary) + '20' }]}>
-              <Ionicons name={category?.icon || 'folder-outline'} size={16} color="black" />
+              <Ionicons name={category?.icon || 'folder-outline'} size={16} color={category?.color || theme.primary} />
             </View>
             <View style={styles.metaContent}>
               <Text style={[styles.metaLabel, { color: theme.textMuted }]}>Category</Text>
@@ -196,7 +198,7 @@ const ScreenshotDetailsScreen = ({ navigation, route }) => {
           </Pressable>
 
           {/* File Size */}
-          <View style={[styles.metadataCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View style={[styles.metadataCard, { backgroundColor: GLASS.background, borderColor: GLASS.border }]}>
             <View style={[styles.metaIcon, { backgroundColor: theme.primary + '20' }]}>
               <Ionicons name="document-outline" size={16} color={theme.primary} />
             </View>
@@ -211,7 +213,7 @@ const ScreenshotDetailsScreen = ({ navigation, route }) => {
 
         {/* Category Picker */}
         {showCategoryPicker && (
-          <View style={[styles.categoryPicker, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View style={[styles.categoryPicker, { backgroundColor: GLASS.background, borderColor: GLASS.border }]}>
             {CATEGORIES.map((cat) => (
               <Pressable
                 key={cat.id}
@@ -224,12 +226,12 @@ const ScreenshotDetailsScreen = ({ navigation, route }) => {
                   },
                 ]}
               >
-                <Ionicons name={cat.icon} size={18} color="black" />
+                <Ionicons name={cat.icon} size={18} color={cat.color} />
                 <Text style={[styles.categoryOptionText, { color: theme.text }]}>
                   {cat.name}
                 </Text>
                 {cat.id === screenshot.category && (
-                  <Ionicons name="checkmark-circle" size={18} color="black" />
+                  <Ionicons name="checkmark-circle" size={18} color={cat.color} />
                 )}
               </Pressable>
             ))}
@@ -264,7 +266,7 @@ const ScreenshotDetailsScreen = ({ navigation, route }) => {
                 styles.notesInput,
                 {
                   color: theme.text,
-                  backgroundColor: theme.surfaceLight,
+                  backgroundColor: GLASS.background,
                   borderColor: theme.primary,
                 },
               ]}
@@ -293,7 +295,7 @@ const ScreenshotDetailsScreen = ({ navigation, route }) => {
 
         {/* Dimensions info */}
         {(screenshot.width > 0 || screenshot.height > 0) && (
-          <View style={[styles.dimensionsCard, { backgroundColor: theme.surfaceLight, borderColor: theme.border }]}>
+          <View style={[styles.dimensionsCard, { backgroundColor: GLASS.background, borderColor: GLASS.border }]}>
             <Ionicons name="resize-outline" size={16} color={theme.textMuted} />
             <Text style={[styles.dimensionsText, { color: theme.textMuted }]}>
               {screenshot.width} × {screenshot.height} px
@@ -329,12 +331,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.sm,
   },
-  headerButton: {
-    width: 36,
-    height: 36,
-    borderRadius: BORDER_RADIUS.md,
+  headerButtonWrap: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  headerButtonBlur: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: GLASS.border,
+    backgroundColor: GLASS.background,
+    overflow: 'hidden',
+  },
+  headerButtonFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(30,30,40,0.85)',
+    borderWidth: 1,
+    borderColor: GLASS.border,
   },
   headerActions: {
     flexDirection: 'row',
@@ -345,7 +365,7 @@ const styles = StyleSheet.create({
   },
   imageWrapper: {
     width: SCREEN_WIDTH,
-    backgroundColor: '#000',
+    backgroundColor: '#0F0F14',
     marginBottom: SPACING.lg,
   },
   image: {
@@ -375,10 +395,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     gap: SPACING.sm,
-    ...SHADOWS.small,
+    ...SHADOWS.subtle,
   },
   metaIcon: {
     width: 32,
@@ -402,10 +422,10 @@ const styles = StyleSheet.create({
   categoryPicker: {
     marginHorizontal: SPACING.lg,
     marginBottom: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: GLASS.borderRadius,
     borderWidth: 1,
     overflow: 'hidden',
-    ...SHADOWS.medium,
+    ...SHADOWS.glass,
   },
   categoryOption: {
     flexDirection: 'row',
@@ -431,7 +451,7 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     borderWidth: 1.5,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.md,
     fontSize: TYPOGRAPHY.sizes.md,
     minHeight: 100,
@@ -446,20 +466,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: SPACING.lg,
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     gap: SPACING.sm,
   },
   dimensionsText: {
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.medium,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   notFound: {
     flex: 1,

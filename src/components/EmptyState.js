@@ -1,10 +1,10 @@
-// EmptyState — Centered placeholder with icon, message, and optional CTA
-// Used on all list screens when no data is present
+// EmptyState — Glass-styled centered placeholder with icon, message, and optional CTA
+// iOS 26 Liquid Glass aesthetic
 
 import React, { memo, useEffect, useState } from 'react';
 import { StyleSheet, View, Text, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS } from '../utils/constants';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, GLASS, SHADOWS } from '../utils/constants';
 import useScreenshots from '../hooks/useScreenshots';
 
 const EmptyState = ({
@@ -24,12 +24,13 @@ const EmptyState = ({
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 500,
+        duration: 600,
         useNativeDriver: true,
       }),
-      Animated.timing(slideAnim, {
+      Animated.spring(slideAnim, {
         toValue: 0,
-        duration: 500,
+        tension: 50,
+        friction: 8,
         useNativeDriver: true,
       }),
     ]).start();
@@ -49,7 +50,7 @@ const EmptyState = ({
         <Ionicons
           name={icon}
           size={48}
-          color="black"
+          color={iconColor || theme.primary}
         />
       </View>
 
@@ -64,6 +65,7 @@ const EmptyState = ({
             {
               backgroundColor: theme.primary,
               opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.96 : 1 }],
             },
           ]}
         >
@@ -84,12 +86,14 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.huge,
   },
   iconContainer: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.xl,
+    borderWidth: 1,
+    borderColor: GLASS.borderLight,
   },
   title: {
     fontSize: TYPOGRAPHY.sizes.xl,
@@ -109,8 +113,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.xl,
     paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.full,
+    borderRadius: GLASS.borderRadiusPill,
     gap: SPACING.sm,
+    ...SHADOWS.glow('#0A84FF'),
   },
   actionLabel: {
     color: '#FFFFFF',

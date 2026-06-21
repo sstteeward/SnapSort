@@ -1,5 +1,5 @@
-// ScreenshotCategoryModal — Bottom sheet for categorizing a detected screenshot
-// Slides up with animation, shows preview + category chips + import/dismiss buttons
+// ScreenshotCategoryModal — Glass bottom sheet for categorizing a detected screenshot
+// iOS 26 Liquid Glass styling with frosted sheet, glass chips, and blur backdrop
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import {
@@ -12,7 +12,9 @@ import {
   Animated,
   Dimensions,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 
 import useScreenshots from '../hooks/useScreenshots';
@@ -23,6 +25,7 @@ import {
   BORDER_RADIUS,
   SHADOWS,
   CATEGORIES,
+  GLASS,
 } from '../utils/constants';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -86,6 +89,135 @@ const ScreenshotCategoryModal = ({ visible, screenshotAsset, onImport, onDismiss
 
   if (!visible && !screenshotAsset) return null;
 
+  const isAndroid = Platform.OS === 'android';
+
+  const sheetContent = (
+    <>
+      {/* Handle */}
+      <View style={styles.handleRow}>
+        <View style={styles.handle} />
+      </View>
+
+      {/* Header */}
+      <View style={styles.headerRow}>
+        <View style={styles.headerIcon}>
+          <Ionicons name="camera-outline" size={20} color={theme.primary} />
+        </View>
+        <View style={styles.headerTextWrap}>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
+            Screenshot Detected!
+          </Text>
+          <Text style={[styles.headerSubtitle, { color: theme.textMuted }]}>
+            Choose a category to organize it
+          </Text>
+        </View>
+        <Pressable onPress={onDismiss} hitSlop={12} style={styles.closeButton}>
+          <Ionicons name="close" size={20} color={theme.textMuted} />
+        </Pressable>
+      </View>
+
+      {/* Preview */}
+      {screenshotAsset?.uri && (
+        <View style={[styles.previewRow, { borderColor: GLASS.border }]}>
+          <Image
+            source={{ uri: screenshotAsset.uri }}
+            style={styles.previewImage}
+            resizeMode="cover"
+          />
+          <View style={styles.previewInfo}>
+            <Text style={[styles.previewLabel, { color: theme.textSecondary }]}>
+              New Screenshot
+            </Text>
+            <Text style={[styles.previewDimensions, { color: theme.textMuted }]}>
+              {screenshotAsset.width && screenshotAsset.height
+                ? `${screenshotAsset.width} × ${screenshotAsset.height}`
+                : 'Image ready'}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Category Chips */}
+      <View style={styles.categorySection}>
+        <Text style={[styles.categoryLabel, { color: theme.text }]}>Category</Text>
+        <View style={styles.categoryChips}>
+          {CATEGORIES.map((cat) => (
+            <Pressable
+              key={cat.id}
+              onPress={() => setSelectedCategory(cat.id)}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor:
+                    selectedCategory === cat.id ? cat.color : GLASS.background,
+                  borderColor:
+                    selectedCategory === cat.id ? cat.color : GLASS.border,
+                },
+              ]}
+            >
+              <Ionicons
+                name={cat.icon}
+                size={14}
+                color={selectedCategory === cat.id ? '#FFFFFF' : theme.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.chipText,
+                  {
+                    color: selectedCategory === cat.id ? '#FFFFFF' : theme.textSecondary,
+                  },
+                ]}
+              >
+                {cat.name}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      {/* Action Buttons */}
+      <View style={styles.actions}>
+        <Pressable
+          onPress={handleImport}
+          disabled={isImporting}
+          style={({ pressed }) => [
+            styles.importButton,
+            {
+              backgroundColor: theme.primary,
+              opacity: pressed || isImporting ? 0.8 : 1,
+            },
+          ]}
+        >
+          {isImporting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons name="download-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.importButtonText}>Import & Categorize</Text>
+            </>
+          )}
+        </Pressable>
+
+        <Pressable
+          onPress={onDismiss}
+          disabled={isImporting}
+          style={({ pressed }) => [
+            styles.dismissButton,
+            {
+              backgroundColor: GLASS.background,
+              borderColor: GLASS.border,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <Text style={[styles.dismissButtonText, { color: theme.textSecondary }]}>
+            Dismiss
+          </Text>
+        </Pressable>
+      </View>
+    </>
+  );
+
   return (
     <Modal
       transparent
@@ -109,133 +241,23 @@ const ScreenshotCategoryModal = ({ visible, screenshotAsset, onImport, onDismiss
         style={[
           styles.sheet,
           {
-            backgroundColor: theme.card,
             transform: [{ translateY: slideAnim }],
           },
         ]}
       >
-        {/* Handle */}
-        <View style={styles.handleRow}>
-          <View style={[styles.handle, { backgroundColor: theme.border }]} />
-        </View>
-
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <View style={styles.headerIcon}>
-            <Ionicons name="camera-outline" size={20} color={theme.primary} />
+        {isAndroid ? (
+          <View style={styles.sheetFallback}>
+            {sheetContent}
           </View>
-          <View style={styles.headerTextWrap}>
-            <Text style={[styles.headerTitle, { color: theme.text }]}>
-              Screenshot Detected!
-            </Text>
-            <Text style={[styles.headerSubtitle, { color: theme.textMuted }]}>
-              Choose a category to organize it
-            </Text>
-          </View>
-          <Pressable onPress={onDismiss} hitSlop={12} style={styles.closeButton}>
-            <Ionicons name="close" size={20} color={theme.textMuted} />
-          </Pressable>
-        </View>
-
-        {/* Preview */}
-        {screenshotAsset?.uri && (
-          <View style={[styles.previewRow, { borderColor: theme.border }]}>
-            <Image
-              source={{ uri: screenshotAsset.uri }}
-              style={styles.previewImage}
-              resizeMode="cover"
-            />
-            <View style={styles.previewInfo}>
-              <Text style={[styles.previewLabel, { color: theme.textMuted }]}>
-                New Screenshot
-              </Text>
-              <Text style={[styles.previewDimensions, { color: theme.textSecondary }]}>
-                {screenshotAsset.width && screenshotAsset.height
-                  ? `${screenshotAsset.width} × ${screenshotAsset.height}`
-                  : 'Image ready'}
-              </Text>
-            </View>
-          </View>
+        ) : (
+          <BlurView
+            intensity={GLASS.blurHeavy}
+            tint="dark"
+            style={styles.sheetBlur}
+          >
+            {sheetContent}
+          </BlurView>
         )}
-
-        {/* Category Chips */}
-        <View style={styles.categorySection}>
-          <Text style={[styles.categoryLabel, { color: theme.text }]}>Category</Text>
-          <View style={styles.categoryChips}>
-            {CATEGORIES.map((cat) => (
-              <Pressable
-                key={cat.id}
-                onPress={() => setSelectedCategory(cat.id)}
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor:
-                      selectedCategory === cat.id ? cat.color : theme.surfaceLight,
-                    borderColor:
-                      selectedCategory === cat.id ? cat.color : theme.border,
-                  },
-                ]}
-              >
-                <Ionicons
-                  name={cat.icon}
-                  size={14}
-                  color={selectedCategory === cat.id ? '#FFFFFF' : theme.text}
-                />
-                <Text
-                  style={[
-                    styles.chipText,
-                    {
-                      color: selectedCategory === cat.id ? '#FFFFFF' : theme.text,
-                    },
-                  ]}
-                >
-                  {cat.name}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actions}>
-          <Pressable
-            onPress={handleImport}
-            disabled={isImporting}
-            style={({ pressed }) => [
-              styles.importButton,
-              {
-                backgroundColor: theme.primary,
-                opacity: pressed || isImporting ? 0.8 : 1,
-              },
-            ]}
-          >
-            {isImporting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Ionicons name="download-outline" size={18} color="#FFFFFF" />
-                <Text style={styles.importButtonText}>Import & Categorize</Text>
-              </>
-            )}
-          </Pressable>
-
-          <Pressable
-            onPress={onDismiss}
-            disabled={isImporting}
-            style={({ pressed }) => [
-              styles.dismissButton,
-              {
-                backgroundColor: theme.surfaceLight,
-                borderColor: theme.border,
-                opacity: pressed ? 0.7 : 1,
-              },
-            ]}
-          >
-            <Text style={[styles.dismissButtonText, { color: theme.textSecondary }]}>
-              Dismiss
-            </Text>
-          </Pressable>
-        </View>
       </Animated.View>
     </Modal>
   );
@@ -254,8 +276,27 @@ const styles = StyleSheet.create({
     minHeight: SHEET_HEIGHT,
     borderTopLeftRadius: BORDER_RADIUS.xxl,
     borderTopRightRadius: BORDER_RADIUS.xxl,
+    overflow: 'hidden',
+    ...SHADOWS.float,
+  },
+  sheetBlur: {
     paddingBottom: SPACING.xxxl,
-    ...SHADOWS.large,
+    borderTopLeftRadius: BORDER_RADIUS.xxl,
+    borderTopRightRadius: BORDER_RADIUS.xxl,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: GLASS.border,
+    backgroundColor: 'rgba(20,20,30,0.7)',
+    overflow: 'hidden',
+  },
+  sheetFallback: {
+    paddingBottom: SPACING.xxxl,
+    borderTopLeftRadius: BORDER_RADIUS.xxl,
+    borderTopRightRadius: BORDER_RADIUS.xxl,
+    borderWidth: 1,
+    borderBottomWidth: 0,
+    borderColor: GLASS.border,
+    backgroundColor: 'rgba(20,20,30,0.95)',
   },
   handleRow: {
     alignItems: 'center',
@@ -266,6 +307,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.3)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -278,7 +320,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BORDER_RADIUS.md,
-    backgroundColor: '#3B82F620',
+    backgroundColor: 'rgba(10,132,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -300,22 +342,24 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   previewRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: SPACING.xl,
     padding: SPACING.md,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     gap: SPACING.md,
     marginBottom: SPACING.lg,
+    backgroundColor: GLASS.backgroundLight,
   },
   previewImage: {
     width: 56,
     height: 56,
-    borderRadius: BORDER_RADIUS.sm,
-    backgroundColor: '#1A1A2E',
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: '#0F0F14',
   },
   previewInfo: {
     flex: 1,
@@ -348,7 +392,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
     paddingVertical: 6,
-    borderRadius: BORDER_RADIUS.full,
+    borderRadius: GLASS.borderRadiusPill,
     borderWidth: 1,
     gap: SPACING.xs,
   },
@@ -365,7 +409,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.full,
+    borderRadius: GLASS.borderRadiusPill,
     gap: SPACING.sm,
   },
   importButtonText: {
@@ -377,7 +421,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: SPACING.md,
-    borderRadius: BORDER_RADIUS.full,
+    borderRadius: GLASS.borderRadiusPill,
     borderWidth: 1,
   },
   dismissButtonText: {

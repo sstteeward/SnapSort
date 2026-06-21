@@ -1,4 +1,5 @@
-// HomeScreen — Dashboard with stats, search, recent screenshots, and quick categories
+// HomeScreen — iOS 26 Liquid Glass Dashboard
+// Dark background with glass stat cards, search, recent screenshots, and categories
 
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import {
@@ -19,6 +20,7 @@ import SearchBar from '../components/SearchBar';
 import ScreenshotCard from '../components/ScreenshotCard';
 import CategoryCard from '../components/CategoryCard';
 import EmptyState from '../components/EmptyState';
+import GlassButton from '../components/GlassButton';
 import useScreenshots from '../hooks/useScreenshots';
 import useSearch from '../hooks/useSearch';
 import {
@@ -28,6 +30,7 @@ import {
   BORDER_RADIUS,
   SHADOWS,
   SCREEN_NAMES,
+  GLASS,
 } from '../utils/constants';
 
 const StatCard = ({ icon, label, value, color, theme }) => {
@@ -55,15 +58,13 @@ const StatCard = ({ icon, label, value, color, theme }) => {
       style={[
         styles.statCard,
         {
-          backgroundColor: theme.card,
-          borderColor: theme.border,
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }],
         },
       ]}
     >
       <View style={[styles.statIcon, { backgroundColor: color + '20' }]}>
-        <Ionicons name={icon} size={20} color="black" />
+        <Ionicons name={icon} size={20} color={color} />
       </View>
       <Text style={[styles.statValue, { color: theme.text }]}>{value}</Text>
       <Text style={[styles.statLabel, { color: theme.textMuted }]}>{label}</Text>
@@ -113,10 +114,7 @@ const HomeScreen = ({ navigation }) => {
   if (isSearching) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-        <StatusBar
-          barStyle={darkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={theme.background}
-        />
+        <StatusBar barStyle="light-content" backgroundColor={theme.background} />
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>Search</Text>
         </View>
@@ -150,10 +148,7 @@ const HomeScreen = ({ navigation }) => {
   if (screenshots.length === 0 && !loading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-        <StatusBar
-          barStyle={darkMode ? 'light-content' : 'dark-content'}
-          backgroundColor={theme.background}
-        />
+        <StatusBar barStyle="light-content" backgroundColor={theme.background} />
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>SnapSort</Text>
         </View>
@@ -173,10 +168,7 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <StatusBar
-        barStyle={darkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={theme.background}
-      />
+      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -269,21 +261,16 @@ const HomeScreen = ({ navigation }) => {
       </ScrollView>
 
       {/* FAB */}
-      <Pressable
-        onPress={handleImport}
-        style={({ pressed }) => [
-          styles.fab,
-          {
-            backgroundColor: theme.primary,
-            bottom: SPACING.xl,
-            right: SPACING.xl,
-            transform: [{ scale: pressed ? 0.9 : 1 }],
-          },
-          SHADOWS.glow(theme.primary),
-        ]}
-      >
-        <Ionicons name="add" size={28} color="#FFFFFF" />
-      </Pressable>
+      <View style={styles.fabContainer}>
+        <GlassButton
+          onPress={handleImport}
+          icon="add"
+          iconSize={28}
+          circular
+          size={56}
+          glowColor={theme.primary}
+        />
+      </View>
     </View>
   );
 };
@@ -293,7 +280,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   header: {
     flexDirection: 'row',
@@ -313,13 +300,6 @@ const styles = StyleSheet.create({
     fontWeight: TYPOGRAPHY.weights.extrabold,
     letterSpacing: -0.5,
   },
-  importButton: {
-    width: 42,
-    height: 42,
-    borderRadius: BORDER_RADIUS.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   searchContainer: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
@@ -334,9 +314,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: SPACING.lg,
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: GLASS.borderRadius,
     borderWidth: 1,
-    ...SHADOWS.small,
+    borderColor: GLASS.border,
+    backgroundColor: GLASS.background,
+    ...SHADOWS.glass,
   },
   statIcon: {
     width: 40,
@@ -399,13 +381,10 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.medium,
   },
-  fab: {
+  fabContainer: {
     position: 'absolute',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
+    bottom: SPACING.xl,
+    right: SPACING.xl,
   },
 });
 

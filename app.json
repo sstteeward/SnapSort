@@ -2,6 +2,7 @@
   "expo": {
     "name": "SnapSort",
     "slug": "SnapSort",
+    "scheme": "snapsort",
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
@@ -43,7 +44,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-dev-client",
       "expo-sqlite",
       "expo-font",
       [

@@ -1,102 +1,120 @@
-// CategoryCard — Pressable card with category icon, name, and screenshot count
-// Color-coded with accent per category
+// CategoryCard — Glass card with category icon, name, and count
+// iOS 26 Liquid Glass styling with tinted glass surfaces
 
-import React, { memo, useCallback } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import React, { memo, useCallback, useRef } from 'react';
+import { StyleSheet, View, Text, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS } from '../utils/constants';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, GLASS } from '../utils/constants';
 import useScreenshots from '../hooks/useScreenshots';
 
 const CategoryCard = ({ category, onPress, compact = false }) => {
   const { darkMode } = useScreenshots();
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handlePress = useCallback(() => {
     if (onPress) onPress(category);
   }, [category, onPress]);
 
+  const handlePressIn = useCallback(() => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.95,
+      tension: 150,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  }, [scaleAnim]);
+
+  const handlePressOut = useCallback(() => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      tension: 150,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+  }, [scaleAnim]);
+
   if (compact) {
     return (
-      <Pressable
-        onPress={handlePress}
-        style={({ pressed }) => [
-          styles.compactContainer,
-          {
-            backgroundColor: category.color + '15',
-            borderColor: category.color + '30',
-            transform: [{ scale: pressed ? 0.95 : 1 }],
-          },
-        ]}
-      >
-        <View style={[styles.compactIcon, { backgroundColor: category.color + '25' }]}>
-          <Ionicons name={category.icon} size={18} color="black" />
-        </View>
-        <Text style={[styles.compactName, { color: theme.text }]} numberOfLines={1}>
-          {category.name}
-        </Text>
-        <Text style={[styles.compactCount, { color: theme.textMuted }]}>
-          {category.count || 0}
-        </Text>
-      </Pressable>
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <Pressable
+          onPress={handlePress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={[
+            styles.compactContainer,
+            {
+              backgroundColor: GLASS.background,
+              borderColor: GLASS.border,
+            },
+          ]}
+        >
+          <View style={[styles.compactIcon, { backgroundColor: category.color + '25' }]}>
+            <Ionicons name={category.icon} size={18} color={category.color} />
+          </View>
+          <Text style={[styles.compactName, { color: theme.text }]} numberOfLines={1}>
+            {category.name}
+          </Text>
+          <Text style={[styles.compactCount, { color: theme.textMuted }]}>
+            {category.count || 0}
+          </Text>
+        </Pressable>
+      </Animated.View>
     );
   }
 
   return (
-    <Pressable
-      onPress={handlePress}
-      style={({ pressed }) => [
-        styles.container,
-        {
-          backgroundColor: theme.card,
-          borderColor: theme.border,
-          transform: [{ scale: pressed ? 0.96 : 1 }],
-        },
-      ]}
-    >
-      {/* Icon */}
-      <View style={[styles.iconContainer, { backgroundColor: category.color + '20' }]}>
-        <Ionicons name={category.icon} size={26} color="black" />
-      </View>
+    <Animated.View style={[styles.animWrap, { transform: [{ scale: scaleAnim }] }]}>
+      <Pressable
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={[
+          styles.container,
+          {
+            backgroundColor: GLASS.background,
+            borderColor: GLASS.border,
+          },
+        ]}
+      >
+        {/* Icon */}
+        <View style={[styles.iconContainer, { backgroundColor: category.color + '20' }]}>
+          <Ionicons name={category.icon} size={26} color={category.color} />
+        </View>
 
-      {/* Name */}
-      <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
-        {category.name}
-      </Text>
+        {/* Name */}
+        <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
+          {category.name}
+        </Text>
 
-      {/* Count */}
-      <Text style={[styles.count, { color: theme.textMuted }]}>
-        {category.count || 0} {(category.count || 0) === 1 ? 'screenshot' : 'screenshots'}
-      </Text>
-    </Pressable>
+        {/* Count */}
+        <Text style={[styles.count, { color: theme.textMuted }]}>
+          {category.count || 0} {(category.count || 0) === 1 ? 'screenshot' : 'screenshots'}
+        </Text>
+      </Pressable>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  animWrap: {
     flex: 1,
-    borderRadius: BORDER_RADIUS.lg,
+    margin: SPACING.xs,
+  },
+  container: {
+    borderRadius: GLASS.borderRadius,
     borderWidth: 1,
     padding: SPACING.lg,
     alignItems: 'center',
-    margin: SPACING.xs,
     overflow: 'hidden',
     minHeight: 140,
     justifyContent: 'center',
-    ...SHADOWS.small,
-  },
-  accentBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    borderTopLeftRadius: BORDER_RADIUS.lg,
-    borderTopRightRadius: BORDER_RADIUS.lg,
+    ...SHADOWS.glass,
   },
   iconContainer: {
     width: 52,
     height: 52,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.md,
@@ -118,7 +136,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     marginBottom: SPACING.sm,
     gap: SPACING.md,
@@ -126,7 +144,7 @@ const styles = StyleSheet.create({
   compactIcon: {
     width: 36,
     height: 36,
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
     justifyContent: 'center',
   },

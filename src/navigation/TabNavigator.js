@@ -1,9 +1,10 @@
-// Bottom Tab Navigator for SnapSort
-// 4 tabs: Home, Categories, Favorites, Settings
+// TabNavigator — iOS 26 Liquid Glass floating pill tab bar
+// Detached from edges, frosted glass background, smooth transitions
 
 import React from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View, Pressable, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -11,75 +12,109 @@ import HomeScreen from '../screens/HomeScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import { SCREEN_NAMES, COLORS, BORDER_RADIUS, SPACING } from '../utils/constants';
+import { SCREEN_NAMES, COLORS, SPACING, GLASS, SHADOWS } from '../utils/constants';
 import useScreenshots from '../hooks/useScreenshots';
 
 const Tab = createBottomTabNavigator();
 
-const TabNavigator = () => {
+const FloatingTabBar = ({ state, descriptors, navigation }) => {
   const { darkMode } = useScreenshots();
   const theme = darkMode ? COLORS.dark : COLORS.light;
   const insets = useSafeAreaInsets();
+  const isAndroid = Platform.OS === 'android';
+
+  const tabItems = state.routes.map((route, index) => {
+    const { options } = descriptors[route.key];
+    const isFocused = state.index === index;
+
+    let iconName;
+    switch (route.name) {
+      case SCREEN_NAMES.HOME:
+        iconName = isFocused ? 'home' : 'home-outline';
+        break;
+      case SCREEN_NAMES.CATEGORIES:
+        iconName = isFocused ? 'grid' : 'grid-outline';
+        break;
+      case SCREEN_NAMES.FAVORITES:
+        iconName = isFocused ? 'heart' : 'heart-outline';
+        break;
+      case SCREEN_NAMES.SETTINGS:
+        iconName = isFocused ? 'settings' : 'settings-outline';
+        break;
+      default:
+        iconName = 'ellipse-outline';
+    }
+
+    const onPress = () => {
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: route.key,
+        canPreventDefault: true,
+      });
+
+      if (!isFocused && !event.defaultPrevented) {
+        navigation.navigate(route.name);
+      }
+    };
+
+    return (
+      <Pressable
+        key={route.key}
+        onPress={onPress}
+        style={[
+          styles.tabButton,
+          isFocused && styles.tabButtonActive,
+          isFocused && { backgroundColor: theme.primary + '25' },
+        ]}
+        accessibilityRole="button"
+        accessibilityState={isFocused ? { selected: true } : {}}
+      >
+        <Ionicons
+          name={iconName}
+          size={22}
+          color={isFocused ? theme.primary : theme.textMuted}
+        />
+      </Pressable>
+    );
+  });
+
+  const tabBarContent = (
+    <View style={styles.tabRow}>
+      {tabItems}
+    </View>
+  );
+
+  return (
+    <View style={[styles.floatingContainer, { bottom: Math.max(insets.bottom, 12) }]}>
+      <View style={[styles.shadowWrap, SHADOWS.float]}>
+        {isAndroid ? (
+          <View style={styles.tabBarFallback}>
+            {tabBarContent}
+          </View>
+        ) : (
+          <BlurView
+            intensity={50}
+            tint="dark"
+            style={styles.tabBarBlur}
+          >
+            {tabBarContent}
+          </BlurView>
+        )}
+      </View>
+    </View>
+  );
+};
+
+const TabNavigator = () => {
+  const { darkMode } = useScreenshots();
+  const theme = darkMode ? COLORS.dark : COLORS.light;
 
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      tabBar={(props) => <FloatingTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-
-          switch (route.name) {
-            case SCREEN_NAMES.HOME:
-              iconName = focused ? 'home' : 'home-outline';
-              break;
-            case SCREEN_NAMES.CATEGORIES:
-              iconName = focused ? 'grid' : 'grid-outline';
-              break;
-            case SCREEN_NAMES.FAVORITES:
-              iconName = focused ? 'heart' : 'heart-outline';
-              break;
-            case SCREEN_NAMES.SETTINGS:
-              iconName = focused ? 'settings' : 'settings-outline';
-              break;
-            default:
-              iconName = 'ellipse-outline';
-          }
-
-          return (
-            <View style={[styles.iconContainer, focused && { backgroundColor: theme.primary + '20' }]}>
-              <Ionicons name={iconName} size={22} color={color} />
-              {focused && <View style={[styles.activeIndicator, { backgroundColor: theme.primary }]} />}
-            </View>
-          );
-        },
-        tabBarActiveTintColor: theme.primary,
-        tabBarInactiveTintColor: theme.textMuted,
-        tabBarShowLabel: true,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          marginTop: -2,
-        },
-        tabBarStyle: {
-          backgroundColor: theme.tabBar,
-          borderTopWidth: 1,
-          borderTopColor: theme.border,
-          height: 70 + insets.bottom,
-          paddingTop: SPACING.sm,
-          paddingBottom: Math.max(insets.bottom, 10),
-          ...Platform.select({
-            ios: {
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 0.1,
-              shadowRadius: 12,
-            },
-            android: {
-              elevation: 8,
-            },
-          }),
-        },
-      })}
+      }}
     >
       <Tab.Screen
         name={SCREEN_NAMES.HOME}
@@ -106,19 +141,52 @@ const TabNavigator = () => {
 };
 
 const styles = StyleSheet.create({
-  iconContainer: {
+  floatingContainer: {
+    position: 'absolute',
+    left: SPACING.xl,
+    right: SPACING.xl,
+    alignItems: 'center',
+  },
+  shadowWrap: {
+    borderRadius: GLASS.borderRadiusPill,
+    width: '100%',
+  },
+  tabBarBlur: {
+    flexDirection: 'row',
+    borderRadius: GLASS.borderRadiusPill,
+    borderWidth: 1,
+    borderColor: GLASS.border,
+    backgroundColor: GLASS.backgroundSolid,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    overflow: 'hidden',
+  },
+  tabBarFallback: {
+    flexDirection: 'row',
+    borderRadius: GLASS.borderRadiusPill,
+    borderWidth: 1,
+    borderColor: GLASS.border,
+    backgroundColor: 'rgba(25,25,35,0.92)',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    flex: 1,
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  tabButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: BORDER_RADIUS.lg,
-    minWidth: 48,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: GLASS.borderRadiusPill,
+    minWidth: 52,
+    height: 40,
   },
-  activeIndicator: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    marginTop: 2,
+  tabButtonActive: {
+    borderRadius: GLASS.borderRadiusPill,
   },
 });
 

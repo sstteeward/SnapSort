@@ -1,4 +1,5 @@
-// CategoryDetailsScreen — Shows all screenshots in a specific category
+// CategoryDetailsScreen — iOS 26 Liquid Glass category view
+// Glass back button, tinted header, dark background
 
 import React, { useCallback, useMemo } from 'react';
 import {
@@ -8,7 +9,9 @@ import {
   FlatList,
   Pressable,
   StatusBar,
+  Platform,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,6 +25,7 @@ import {
   BORDER_RADIUS,
   CATEGORIES,
   SCREEN_NAMES,
+  GLASS,
 } from '../utils/constants';
 
 const CategoryDetailsScreen = ({ navigation, route }) => {
@@ -40,75 +44,82 @@ const CategoryDetailsScreen = ({ navigation, route }) => {
     (screenshot) => {
       navigation.navigate(SCREEN_NAMES.SCREENSHOT_DETAILS, { id: screenshot.id });
     },
-  [navigation]
+    [navigation]
   );
 
-const renderItem = useCallback(
-  ({ item }) => (
-    <ScreenshotCard screenshot={item} onPress={handleScreenshotPress} />
-  ),
-  [handleScreenshotPress]
-);
+  const renderItem = useCallback(
+    ({ item }) => (
+      <ScreenshotCard screenshot={item} onPress={handleScreenshotPress} />
+    ),
+    [handleScreenshotPress]
+  );
 
-return (
-  <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-    <StatusBar
-      barStyle={darkMode ? 'light-content' : 'dark-content'}
-      backgroundColor={theme.background}
-    />
+  const isAndroid = Platform.OS === 'android';
 
-    {/* Header */}
-    <View style={styles.header}>
-      <Pressable
-        onPress={() => navigation.goBack()}
-        style={({ pressed }) => [
-          styles.backButton,
-          { backgroundColor: theme.surfaceLight, opacity: pressed ? 0.7 : 1 },
-        ]}
-        hitSlop={8}
-      >
-        <Ionicons name="chevron-back" size={20} color={theme.text} />
-      </Pressable>
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
 
-      <View style={styles.headerInfo}>
-        <View style={styles.headerRow}>
-          {category && (
-            <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
-              <Ionicons name={category.icon} size={20} color="black" />
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={({ pressed }) => [
+            styles.backButtonWrap,
+            { opacity: pressed ? 0.7 : 1 },
+          ]}
+          hitSlop={8}
+        >
+          {isAndroid ? (
+            <View style={styles.backButtonFallback}>
+              <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
             </View>
+          ) : (
+            <BlurView intensity={30} tint="dark" style={styles.backButtonBlur}>
+              <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+            </BlurView>
           )}
-          <Text style={[styles.title, { color: theme.text }]}>
-            {category ? category.name : 'Category'}
+        </Pressable>
+
+        <View style={styles.headerInfo}>
+          <View style={styles.headerRow}>
+            {category && (
+              <View style={[styles.categoryIcon, { backgroundColor: category.color + '20' }]}>
+                <Ionicons name={category.icon} size={20} color={category.color} />
+              </View>
+            )}
+            <Text style={[styles.title, { color: theme.text }]}>
+              {category ? category.name : 'Category'}
+            </Text>
+          </View>
+          <Text style={[styles.count, { color: theme.textMuted }]}>
+            {screenshots.length} {screenshots.length === 1 ? 'screenshot' : 'screenshots'}
           </Text>
         </View>
-        <Text style={[styles.count, { color: theme.textMuted }]}>
-          {screenshots.length} {screenshots.length === 1 ? 'screenshot' : 'screenshots'}
-        </Text>
       </View>
-    </View>
 
-    {/* Screenshot Grid */}
-    <FlatList
-      data={screenshots}
-      renderItem={renderItem}
-      keyExtractor={(item) => item.id}
-      numColumns={2}
-      columnWrapperStyle={styles.gridRow}
-      contentContainerStyle={styles.gridContent}
-      showsVerticalScrollIndicator={false}
-      ListEmptyComponent={
-        <EmptyState
-          icon={category ? category.icon : 'folder-outline'}
-          title={`No ${category ? category.name : ''} screenshots`}
-          message="Screenshots assigned to this category will appear here."
-          iconColor={category ? category.color : undefined}
-          actionLabel="Import Screenshots"
-          onAction={() => navigation.navigate(SCREEN_NAMES.IMPORT)}
-        />
-      }
-    />
-  </View>
-);
+      {/* Screenshot Grid */}
+      <FlatList
+        data={screenshots}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.gridRow}
+        contentContainerStyle={styles.gridContent}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <EmptyState
+            icon={category ? category.icon : 'folder-outline'}
+            title={`No ${category ? category.name : ''} screenshots`}
+            message="Screenshots assigned to this category will appear here."
+            iconColor={category ? category.color : undefined}
+            actionLabel="Import Screenshots"
+            onAction={() => navigation.navigate(SCREEN_NAMES.IMPORT)}
+          />
+        }
+      />
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -123,12 +134,30 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.lg,
     gap: SPACING.md,
   },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: BORDER_RADIUS.md,
+  backButtonWrap: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  backButtonBlur: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: GLASS.border,
+    backgroundColor: GLASS.background,
+    overflow: 'hidden',
+  },
+  backButtonFallback: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(30,30,40,0.85)',
+    borderWidth: 1,
+    borderColor: GLASS.border,
   },
   headerInfo: {
     flex: 1,

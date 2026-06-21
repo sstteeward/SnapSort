@@ -1,4 +1,5 @@
-// SettingsScreen — Preferences, storage usage, and data management
+// SettingsScreen — iOS 26 Liquid Glass preferences
+// Glass section cards, dark background, translucent surfaces
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
@@ -21,6 +22,7 @@ import {
   TYPOGRAPHY,
   SPACING,
   BORDER_RADIUS,
+  GLASS,
 } from '../utils/constants';
 
 const SettingsScreen = () => {
@@ -60,7 +62,7 @@ const SettingsScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
+      <StatusBar barStyle="light-content" />
 
       {/* Header */}
       <View style={styles.header}>
@@ -73,19 +75,20 @@ const SettingsScreen = () => {
           <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
             APPEARANCE
           </Text>
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View style={[styles.card, { backgroundColor: GLASS.background, borderColor: GLASS.border }]}>
             <View style={styles.row}>
               <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: theme.surfaceLight }]}>
-                  <Ionicons name={darkMode ? 'moon' : 'sunny'} size={20} color={theme.text} />
+                <View style={[styles.iconBox, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                  <Ionicons name={darkMode ? 'moon' : 'sunny'} size={20} color={theme.primary} />
                 </View>
                 <Text style={[styles.rowText, { color: theme.text }]}>Dark Mode</Text>
               </View>
               <Switch
                 value={darkMode}
                 onValueChange={toggleDarkMode}
-                trackColor={{ false: theme.border, true: theme.primary }}
+                trackColor={{ false: 'rgba(255,255,255,0.15)', true: theme.primary }}
                 thumbColor="#FFFFFF"
+                ios_backgroundColor="rgba(255,255,255,0.15)"
               />
             </View>
           </View>
@@ -96,12 +99,12 @@ const SettingsScreen = () => {
           <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
             DATA & STORAGE
           </Text>
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View style={[styles.card, { backgroundColor: GLASS.background, borderColor: GLASS.border }]}>
             {/* Storage Info */}
-            <View style={[styles.row, styles.rowBorder, { borderBottomColor: theme.border }]}>
+            <View style={[styles.row, styles.rowBorder, { borderBottomColor: GLASS.borderLight }]}>
               <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: theme.surfaceLight }]}>
-                  <Ionicons name="server-outline" size={20} color={theme.text} />
+                <View style={[styles.iconBox, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                  <Ionicons name="server-outline" size={20} color={theme.primary} />
                 </View>
                 <View>
                   <Text style={[styles.rowText, { color: theme.text }]}>Local Storage</Text>
@@ -135,11 +138,11 @@ const SettingsScreen = () => {
           <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
             ABOUT
           </Text>
-          <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
+          <View style={[styles.card, { backgroundColor: GLASS.background, borderColor: GLASS.border }]}>
             <View style={styles.row}>
               <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: theme.surfaceLight }]}>
-                  <Ionicons name="information-circle-outline" size={20} color={theme.text} />
+                <View style={[styles.iconBox, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                  <Ionicons name="information-circle-outline" size={20} color={theme.primary} />
                 </View>
                 <Text style={[styles.rowText, { color: theme.text }]}>Version</Text>
               </View>
@@ -149,7 +152,7 @@ const SettingsScreen = () => {
         </View>
 
         <Text style={[styles.footer, { color: theme.textMuted }]}>
-          Built by ssttewards.
+          Built by sstteward.
         </Text>
       </ScrollView>
     </View>
@@ -185,7 +188,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   card: {
-    borderRadius: BORDER_RADIUS.lg,
+    borderRadius: GLASS.borderRadius,
     borderWidth: 1,
     overflow: 'hidden',
   },
