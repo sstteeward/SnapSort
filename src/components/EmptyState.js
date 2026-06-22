@@ -4,7 +4,7 @@
 import React, { memo, useEffect, useState } from 'react';
 import { StyleSheet, View, Text, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, GLASS, SHADOWS } from '../utils/constants';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, GLASS, getGlass, getShadows } from '../utils/constants';
 import useScreenshots from '../hooks/useScreenshots';
 
 const EmptyState = ({
@@ -17,6 +17,8 @@ const EmptyState = ({
 }) => {
   const { darkMode } = useScreenshots();
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const glass = getGlass(darkMode);
+  const shadows = getShadows(darkMode);
   const [fadeAnim] = useState(() => new Animated.Value(0));
   const [slideAnim] = useState(() => new Animated.Value(20));
 
@@ -46,7 +48,10 @@ const EmptyState = ({
         },
       ]}
     >
-      <View style={[styles.iconContainer, { backgroundColor: (iconColor || theme.primary) + '15' }]}>
+      <View style={[styles.iconContainer, {
+        backgroundColor: (iconColor || theme.primary) + '15',
+        borderColor: darkMode ? glass.borderLight : 'rgba(0,0,0,0.06)',
+      }]}>
         <Ionicons
           name={icon}
           size={48}
@@ -93,7 +98,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: SPACING.xl,
     borderWidth: 1,
-    borderColor: GLASS.borderLight,
   },
   title: {
     fontSize: TYPOGRAPHY.sizes.xl,
@@ -115,7 +119,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     borderRadius: GLASS.borderRadiusPill,
     gap: SPACING.sm,
-    ...SHADOWS.glow('#0A84FF'),
+    ...getShadows(true).glow('#0A84FF'),
   },
   actionLabel: {
     color: '#FFFFFF',

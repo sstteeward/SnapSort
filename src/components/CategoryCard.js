@@ -1,16 +1,22 @@
 // CategoryCard — Glass card with category icon, name, and count
-// iOS 26 Liquid Glass styling with tinted glass surfaces
+// iOS 26 Liquid Glass styling — theme-aware
 
 import React, { memo, useCallback, useRef } from 'react';
 import { StyleSheet, View, Text, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, GLASS } from '../utils/constants';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, GLASS, getGlass, getShadows } from '../utils/constants';
 import useScreenshots from '../hooks/useScreenshots';
 
 const CategoryCard = ({ category, onPress, compact = false }) => {
   const { darkMode } = useScreenshots();
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const glass = getGlass(darkMode);
+  const shadows = getShadows(darkMode);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  // Theme-aware card styling
+  const cardBg = darkMode ? glass.background : 'rgba(255,255,255,0.65)';
+  const cardBorder = darkMode ? glass.border : 'rgba(0,0,0,0.08)';
 
   const handlePress = useCallback(() => {
     if (onPress) onPress(category);
@@ -44,8 +50,8 @@ const CategoryCard = ({ category, onPress, compact = false }) => {
           style={[
             styles.compactContainer,
             {
-              backgroundColor: GLASS.background,
-              borderColor: GLASS.border,
+              backgroundColor: cardBg,
+              borderColor: cardBorder,
             },
           ]}
         >
@@ -72,9 +78,10 @@ const CategoryCard = ({ category, onPress, compact = false }) => {
         style={[
           styles.container,
           {
-            backgroundColor: GLASS.background,
-            borderColor: GLASS.border,
+            backgroundColor: cardBg,
+            borderColor: cardBorder,
           },
+          shadows.glass,
         ]}
       >
         {/* Icon */}
@@ -109,7 +116,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     minHeight: 140,
     justifyContent: 'center',
-    ...SHADOWS.glass,
   },
   iconContainer: {
     width: 52,

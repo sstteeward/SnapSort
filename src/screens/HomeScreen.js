@@ -1,5 +1,5 @@
 // HomeScreen — iOS 26 Liquid Glass Dashboard
-// Dark background with glass stat cards, search, recent screenshots, and categories
+// Theme-aware: bright glass in Light Mode, dark glass in Dark Mode
 
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import {
@@ -20,7 +20,6 @@ import SearchBar from '../components/SearchBar';
 import ScreenshotCard from '../components/ScreenshotCard';
 import CategoryCard from '../components/CategoryCard';
 import EmptyState from '../components/EmptyState';
-import GlassButton from '../components/GlassButton';
 import useScreenshots from '../hooks/useScreenshots';
 import useSearch from '../hooks/useSearch';
 import {
@@ -28,12 +27,15 @@ import {
   TYPOGRAPHY,
   SPACING,
   BORDER_RADIUS,
-  SHADOWS,
   SCREEN_NAMES,
   GLASS,
+  getGlass,
+  getShadows,
 } from '../utils/constants';
 
-const StatCard = ({ icon, label, value, color, theme }) => {
+const StatCard = ({ icon, label, value, color, theme, darkMode }) => {
+  const glass = getGlass(darkMode);
+  const shadows = getShadows(darkMode);
   const [fadeAnim] = useState(() => new Animated.Value(0));
   const [scaleAnim] = useState(() => new Animated.Value(0.8));
 
@@ -60,7 +62,10 @@ const StatCard = ({ icon, label, value, color, theme }) => {
         {
           opacity: fadeAnim,
           transform: [{ scale: scaleAnim }],
+          borderColor: darkMode ? glass.border : 'rgba(0,0,0,0.08)',
+          backgroundColor: darkMode ? glass.background : 'rgba(255,255,255,0.65)',
         },
+        shadows.glass,
       ]}
     >
       <View style={[styles.statIcon, { backgroundColor: color + '20' }]}>
@@ -80,6 +85,7 @@ const HomeScreen = ({ navigation }) => {
     categoriesWithCounts,
     loading,
     darkMode,
+    inboxCount,
   } = useScreenshots();
   const { query, setQuery, results, isSearching } = useSearch(screenshots);
   const insets = useSafeAreaInsets();
@@ -110,11 +116,13 @@ const HomeScreen = ({ navigation }) => {
     [handleScreenshotPress]
   );
 
+  const statusBarStyle = darkMode ? 'light-content' : 'dark-content';
+
   // If searching, show search results
   if (isSearching) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" backgroundColor={theme.background} />
+        <StatusBar barStyle={statusBarStyle} backgroundColor={theme.background} />
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>Search</Text>
         </View>
@@ -148,7 +156,7 @@ const HomeScreen = ({ navigation }) => {
   if (screenshots.length === 0 && !loading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-        <StatusBar barStyle="light-content" backgroundColor={theme.background} />
+        <StatusBar barStyle={statusBarStyle} backgroundColor={theme.background} />
         <View style={styles.header}>
           <Text style={[styles.headerTitle, { color: theme.text }]}>SnapSort</Text>
         </View>
@@ -168,7 +176,7 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={theme.background} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -185,7 +193,35 @@ const HomeScreen = ({ navigation }) => {
             </Text>
             <Text style={[styles.headerTitle, { color: theme.text }]}>SnapSort</Text>
           </View>
+          <Pressable
+            onPress={handleImport}
+            style={({ pressed }) => [styles.headerAddButton, {
+              backgroundColor: theme.primary,
+              opacity: pressed ? 0.85 : 1,
+              transform: [{ scale: pressed ? 0.92 : 1 }],
+            }]}
+          >
+            <Ionicons name="add" size={24} color="#FFFFFF" />
+          </Pressable>
         </View>
+
+        {/* Inbox Banner */}
+        {inboxCount > 0 && (
+          <Pressable
+            onPress={() => navigation.navigate(SCREEN_NAMES.INBOX)}
+            style={({ pressed }) => [styles.inboxBanner, {
+              backgroundColor: theme.primary + '18',
+              borderColor: theme.primary + '30',
+              opacity: pressed ? 0.85 : 1,
+            }]}
+          >
+            <Ionicons name="mail-unread-outline" size={20} color={theme.primary} />
+            <Text style={[styles.inboxBannerText, { color: theme.primary }]}>
+              {inboxCount} new {inboxCount === 1 ? 'screenshot' : 'screenshots'} — Tap to categorize
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={theme.primary} />
+          </Pressable>
+        )}
 
         {/* Search */}
         <View style={styles.searchContainer}>
@@ -200,6 +236,7 @@ const HomeScreen = ({ navigation }) => {
             value={stats.total}
             color={theme.primary}
             theme={theme}
+            darkMode={darkMode}
           />
           <StatCard
             icon="grid"
@@ -207,6 +244,7 @@ const HomeScreen = ({ navigation }) => {
             value={stats.categoriesUsed}
             color={theme.success}
             theme={theme}
+            darkMode={darkMode}
           />
           <StatCard
             icon="heart"
@@ -214,6 +252,7 @@ const HomeScreen = ({ navigation }) => {
             value={stats.favorites}
             color={theme.accent}
             theme={theme}
+            darkMode={darkMode}
           />
         </View>
 
@@ -260,17 +299,6 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* FAB */}
-      <View style={styles.fabContainer}>
-        <GlassButton
-          onPress={handleImport}
-          icon="add"
-          iconSize={28}
-          circular
-          size={56}
-          glowColor={theme.primary}
-        />
-      </View>
     </View>
   );
 };
@@ -316,9 +344,6 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
     borderRadius: GLASS.borderRadius,
     borderWidth: 1,
-    borderColor: GLASS.border,
-    backgroundColor: GLASS.background,
-    ...SHADOWS.glass,
   },
   statIcon: {
     width: 40,
@@ -381,10 +406,28 @@ const styles = StyleSheet.create({
     fontSize: TYPOGRAPHY.sizes.sm,
     fontWeight: TYPOGRAPHY.weights.medium,
   },
-  fabContainer: {
-    position: 'absolute',
-    bottom: SPACING.xl,
-    right: SPACING.xl,
+  headerAddButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inboxBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.sm,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.xl,
+    borderWidth: 1,
+    gap: SPACING.sm,
+  },
+  inboxBannerText: {
+    flex: 1,
+    fontSize: TYPOGRAPHY.sizes.sm,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
 });
 

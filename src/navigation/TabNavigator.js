@@ -1,5 +1,5 @@
 // TabNavigator — iOS 26 Liquid Glass floating pill tab bar
-// Detached from edges, frosted glass background, smooth transitions
+// Theme-aware: bright white glass in Light Mode, dark frosted glass in Dark Mode
 
 import React from 'react';
 import { StyleSheet, View, Pressable, Platform } from 'react-native';
@@ -9,17 +9,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import HomeScreen from '../screens/HomeScreen';
+import InboxScreen from '../screens/InboxScreen';
 import CategoriesScreen from '../screens/CategoriesScreen';
 import FavoritesScreen from '../screens/FavoritesScreen';
 import SettingsScreen from '../screens/SettingsScreen';
-import { SCREEN_NAMES, COLORS, SPACING, GLASS, SHADOWS } from '../utils/constants';
+import { SCREEN_NAMES, COLORS, SPACING, GLASS, getGlass, getShadows } from '../utils/constants';
 import useScreenshots from '../hooks/useScreenshots';
 
 const Tab = createBottomTabNavigator();
 
 const FloatingTabBar = ({ state, descriptors, navigation }) => {
-  const { darkMode } = useScreenshots();
+  const { darkMode, inboxCount } = useScreenshots();
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const glass = getGlass(darkMode);
+  const shadows = getShadows(darkMode);
   const insets = useSafeAreaInsets();
   const isAndroid = Platform.OS === 'android';
 
@@ -28,9 +31,14 @@ const FloatingTabBar = ({ state, descriptors, navigation }) => {
     const isFocused = state.index === index;
 
     let iconName;
+    let showBadge = false;
     switch (route.name) {
       case SCREEN_NAMES.HOME:
         iconName = isFocused ? 'home' : 'home-outline';
+        break;
+      case SCREEN_NAMES.INBOX:
+        iconName = isFocused ? 'mail' : 'mail-outline';
+        showBadge = inboxCount > 0;
         break;
       case SCREEN_NAMES.CATEGORIES:
         iconName = isFocused ? 'grid' : 'grid-outline';
@@ -69,11 +77,16 @@ const FloatingTabBar = ({ state, descriptors, navigation }) => {
         accessibilityRole="button"
         accessibilityState={isFocused ? { selected: true } : {}}
       >
-        <Ionicons
-          name={iconName}
-          size={22}
-          color={isFocused ? theme.primary : theme.textMuted}
-        />
+        <View>
+          <Ionicons
+            name={iconName}
+            size={22}
+            color={isFocused ? theme.primary : theme.textMuted}
+          />
+          {showBadge && (
+            <View style={[styles.badge, { backgroundColor: theme.error }]} />
+          )}
+        </View>
       </Pressable>
     );
   });
@@ -84,18 +97,28 @@ const FloatingTabBar = ({ state, descriptors, navigation }) => {
     </View>
   );
 
+  // Theme-aware tab bar styles
+  const tabBarBg = darkMode ? 'rgba(30,30,40,0.65)' : 'rgba(255,255,255,0.80)';
+  const tabBarBorder = darkMode ? glass.border : 'rgba(0,0,0,0.08)';
+
   return (
     <View style={[styles.floatingContainer, { bottom: Math.max(insets.bottom, 12) }]}>
-      <View style={[styles.shadowWrap, SHADOWS.float]}>
+      <View style={[styles.shadowWrap, shadows.float]}>
         {isAndroid ? (
-          <View style={styles.tabBarFallback}>
+          <View style={[styles.tabBarBase, {
+            backgroundColor: darkMode ? 'rgba(25,25,35,0.92)' : 'rgba(255,255,255,0.90)',
+            borderColor: tabBarBorder,
+          }]}>
             {tabBarContent}
           </View>
         ) : (
           <BlurView
             intensity={50}
-            tint="dark"
-            style={styles.tabBarBlur}
+            tint={darkMode ? 'dark' : 'light'}
+            style={[styles.tabBarBase, {
+              backgroundColor: tabBarBg,
+              borderColor: tabBarBorder,
+            }]}
           >
             {tabBarContent}
           </BlurView>
@@ -120,6 +143,11 @@ const TabNavigator = () => {
         name={SCREEN_NAMES.HOME}
         component={HomeScreen}
         options={{ tabBarLabel: 'Home' }}
+      />
+      <Tab.Screen
+        name={SCREEN_NAMES.INBOX}
+        component={InboxScreen}
+        options={{ tabBarLabel: 'Inbox' }}
       />
       <Tab.Screen
         name={SCREEN_NAMES.CATEGORIES}
@@ -151,24 +179,13 @@ const styles = StyleSheet.create({
     borderRadius: GLASS.borderRadiusPill,
     width: '100%',
   },
-  tabBarBlur: {
+  tabBarBase: {
     flexDirection: 'row',
     borderRadius: GLASS.borderRadiusPill,
     borderWidth: 1,
-    borderColor: GLASS.border,
-    backgroundColor: GLASS.backgroundSolid,
     paddingVertical: SPACING.sm,
     paddingHorizontal: SPACING.md,
     overflow: 'hidden',
-  },
-  tabBarFallback: {
-    flexDirection: 'row',
-    borderRadius: GLASS.borderRadiusPill,
-    borderWidth: 1,
-    borderColor: GLASS.border,
-    backgroundColor: 'rgba(25,25,35,0.92)',
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
   },
   tabRow: {
     flexDirection: 'row',
@@ -187,6 +204,14 @@ const styles = StyleSheet.create({
   },
   tabButtonActive: {
     borderRadius: GLASS.borderRadiusPill,
+  },
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });
 

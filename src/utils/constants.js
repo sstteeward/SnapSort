@@ -44,17 +44,17 @@ export const COLORS = {
     text: '#000000',
     textSecondary: 'rgba(0,0,0,0.6)',
     textMuted: 'rgba(0,0,0,0.35)',
-    border: 'rgba(0,0,0,0.08)',
+    border: 'rgba(0,0,0,0.1)',
     card: 'rgba(255,255,255,0.72)',
-    overlay: 'rgba(0,0,0,0.3)',
-    tabBar: 'rgba(245,245,250,0.72)',
+    overlay: 'rgba(0,0,0,0.15)',
+    tabBar: 'rgba(255,255,255,0.80)',
     statusBar: '#F2F2F7',
     gradient1: '#007AFF',
     gradient2: '#5856D6',
   },
 };
 
-// Liquid Glass Design Tokens
+// Liquid Glass Design Tokens — Dark Mode (default)
 export const GLASS = {
   background: 'rgba(255,255,255,0.08)',
   backgroundLight: 'rgba(255,255,255,0.05)',
@@ -70,6 +70,26 @@ export const GLASS = {
   borderRadiusLg: 32,
   borderRadiusPill: 999,
 };
+
+// Liquid Glass Design Tokens — Light Mode
+export const GLASS_LIGHT = {
+  background: 'rgba(255,255,255,0.65)',
+  backgroundLight: 'rgba(255,255,255,0.5)',
+  backgroundHover: 'rgba(255,255,255,0.82)',
+  backgroundSolid: 'rgba(255,255,255,0.75)',
+  border: 'rgba(255,255,255,0.4)',
+  borderLight: 'rgba(255,255,255,0.25)',
+  highlight: 'rgba(255,255,255,0.6)',
+  blur: 30,
+  blurLight: 15,
+  blurHeavy: 50,
+  borderRadius: 24,
+  borderRadiusLg: 32,
+  borderRadiusPill: 999,
+};
+
+// Returns the correct glass tokens based on theme
+export const getGlass = (isDark) => isDark ? GLASS : GLASS_LIGHT;
 
 export const TYPOGRAPHY = {
   fontFamily: {
@@ -155,6 +175,47 @@ export const SHADOWS = {
   }),
 };
 
+// Light mode shadows — softer to match bright aesthetic
+export const SHADOWS_LIGHT = {
+  glass: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  float: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  subtle: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  small: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  glow: (color) => ({
+    shadowColor: color,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
+  }),
+};
+
+export const getShadows = (isDark) => isDark ? SHADOWS : SHADOWS_LIGHT;
+
 export const CATEGORIES = [
   {
     id: 'school',
@@ -216,6 +277,7 @@ export const CATEGORIES = [
 
 export const SCREEN_NAMES = {
   HOME: 'Home',
+  INBOX: 'Inbox',
   CATEGORIES: 'Categories',
   CATEGORY_DETAILS: 'CategoryDetails',
   FAVORITES: 'Favorites',
@@ -225,6 +287,11 @@ export const SCREEN_NAMES = {
   MAIN_TABS: 'MainTabs',
 };
 
+export const STORAGE_MODES = {
+  COPY: 'copy',
+  MOVE: 'move',
+};
+
 export const THUMBNAIL = {
   WIDTH: 300,
   QUALITY: 0.7,
@@ -232,3 +299,5 @@ export const THUMBNAIL = {
 };
 
 export const MAX_IMPORT_BATCH = 50;
+export const SCREENSHOT_SCAN_LIMIT = 100;
+export const ALBUM_PREFIX = 'SnapSort - ';

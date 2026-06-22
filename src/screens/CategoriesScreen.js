@@ -1,5 +1,5 @@
 // CategoriesScreen — Glass grid of all category cards
-// iOS 26 Liquid Glass dark theme
+// iOS 26 Liquid Glass — theme-aware
 
 import React, { useCallback } from 'react';
 import {
@@ -41,7 +41,7 @@ const CategoriesScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.background} />
 
       {/* Header */}
       <View style={styles.header}>

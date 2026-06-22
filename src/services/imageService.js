@@ -147,9 +147,62 @@ export const processImage = async (asset, category = 'others') => {
       width: asset.width || 0,
       height: asset.height || 0,
       fileSize: fileInfo.size || 0,
+      assetId: asset.assetId || '',
+      albumName: '',
     };
   } catch (error) {
     console.error('processImage failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * Process a gallery asset (from MediaLibrary scan, not ImagePicker).
+ * Uses the asset's localUri from MediaLibrary.getAssetInfoAsync().
+ * @param {object} assetInfo - { assetId, uri, width, height, filename, fileSize }
+ * @param {string} category - Category to assign
+ * @returns {object} Screenshot metadata object
+ */
+export const processGalleryAsset = async (assetInfo, category = 'others') => {
+  try {
+    const id = await generateId();
+    const sourceUri = assetInfo.uri;
+
+    // Save a local copy of the image
+    const localUri = await saveImage(sourceUri, id);
+
+    // Generate thumbnail
+    let thumbnailUri = '';
+    try {
+      thumbnailUri = await generateThumbnail(sourceUri, id);
+    } catch (thumbError) {
+      console.warn('Thumbnail generation failed, using original:', thumbError);
+      thumbnailUri = localUri;
+    }
+
+    // Get file info
+    const fileInfo = await FileSystem.getInfoAsync(localUri);
+
+    // Generate a title from filename or date
+    const title = generateTitle(assetInfo.filename || sourceUri);
+
+    return {
+      id,
+      uri: localUri,
+      thumbnailUri,
+      title,
+      category,
+      notes: '',
+      tags: '',
+      isFavorite: false,
+      width: assetInfo.width || 0,
+      height: assetInfo.height || 0,
+      fileSize: fileInfo.size || assetInfo.fileSize || 0,
+      assetId: assetInfo.assetId || '',
+      albumName: '',
+    };
+  } catch (error) {
+    console.error('processGalleryAsset failed:', error);
     throw error;
   }
 };

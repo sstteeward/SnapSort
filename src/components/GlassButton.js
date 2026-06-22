@@ -1,11 +1,13 @@
 // GlassButton — Floating frosted glass button with spring animation
 // Used for FAB, circular actions, and pill-shaped CTAs
+// Theme-aware: adapts glass surfaces for Light and Dark modes
 
 import React, { memo, useCallback, useRef } from 'react';
 import { StyleSheet, Pressable, Animated, View, Text, Platform } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { GLASS, SHADOWS, TYPOGRAPHY, SPACING } from '../utils/constants';
+import { GLASS, TYPOGRAPHY, SPACING, getGlass, getShadows } from '../utils/constants';
+import useScreenshots from '../hooks/useScreenshots';
 
 const GlassButton = ({
   onPress,
@@ -16,10 +18,17 @@ const GlassButton = ({
   size = 56,
   style,
   glowColor,
-  iconColor = '#FFFFFF',
+  iconColor,
+  backgroundColor,
   disabled = false,
 }) => {
+  const { darkMode } = useScreenshots();
+  const glass = getGlass(darkMode);
+  const shadows = getShadows(darkMode);
   const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  // Default icon color based on theme
+  const resolvedIconColor = iconColor || (darkMode ? '#FFFFFF' : '#000000');
 
   const handlePressIn = useCallback(() => {
     Animated.spring(scaleAnim, {
@@ -45,9 +54,9 @@ const GlassButton = ({
 
   const innerContent = (
     <>
-      {icon && <Ionicons name={icon} size={iconSize} color={iconColor} />}
+      {icon && <Ionicons name={icon} size={iconSize} color={resolvedIconColor} />}
       {label && (
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, { color: resolvedIconColor }]}>{label}</Text>
       )}
     </>
   );
@@ -59,7 +68,7 @@ const GlassButton = ({
           transform: [{ scale: scaleAnim }],
           borderRadius,
         },
-        glowColor ? SHADOWS.glow(glowColor) : SHADOWS.float,
+        glowColor ? shadows.glow(glowColor) : shadows.float,
         style,
       ]}
     >
@@ -86,6 +95,8 @@ const GlassButton = ({
                 height: buttonSize,
                 borderRadius,
                 paddingHorizontal: label ? SPACING.xl : 0,
+                borderColor: darkMode ? glass.border : 'rgba(0,0,0,0.08)',
+                backgroundColor: backgroundColor || (darkMode ? 'rgba(40,40,55,0.85)' : 'rgba(255,255,255,0.82)'),
               },
             ]}
           >
@@ -94,7 +105,7 @@ const GlassButton = ({
         ) : (
           <BlurView
             intensity={GLASS.blurHeavy}
-            tint="dark"
+            tint={darkMode ? 'dark' : 'light'}
             style={[
               styles.blur,
               {
@@ -102,6 +113,8 @@ const GlassButton = ({
                 height: buttonSize,
                 borderRadius,
                 paddingHorizontal: label ? SPACING.xl : 0,
+                borderColor: darkMode ? glass.border : 'rgba(0,0,0,0.08)',
+                backgroundColor: backgroundColor || glass.backgroundHover,
               },
             ]}
           >
@@ -123,8 +136,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: SPACING.sm,
     borderWidth: 1,
-    borderColor: GLASS.border,
-    backgroundColor: GLASS.backgroundHover,
     overflow: 'hidden',
   },
   fallback: {
@@ -133,12 +144,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: SPACING.sm,
     borderWidth: 1,
-    borderColor: GLASS.border,
-    backgroundColor: 'rgba(40,40,55,0.85)',
     overflow: 'hidden',
   },
   label: {
-    color: '#FFFFFF',
     fontSize: TYPOGRAPHY.sizes.lg,
     fontWeight: TYPOGRAPHY.weights.semibold,
   },

@@ -22,7 +22,7 @@ import {
 } from '../services/notificationService';
 
 const ScreenshotDetector = () => {
-  const { importScreenshots } = useScreenshots();
+  const { importScreenshots, scanGallery } = useScreenshots();
   const [modalVisible, setModalVisible] = useState(false);
   const [detectedAsset, setDetectedAsset] = useState(null);
 
@@ -153,6 +153,13 @@ const ScreenshotDetector = () => {
           if (photoAgeMs < 5 * 60 * 1000) {
             showDetection(asset);
           }
+        }
+
+        // Also refresh the inbox with a gallery scan
+        try {
+          scanGallery();
+        } catch (e) {
+          // Non-critical — inbox will update on next manual refresh
         }
       }
 

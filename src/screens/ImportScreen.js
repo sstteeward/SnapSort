@@ -1,5 +1,5 @@
 // ImportScreen — iOS 26 Liquid Glass multi-image picker
-// Glass surfaces, dark theme, frosted bottom bar
+// Theme-aware: bright glass in Light Mode, dark glass in Dark Mode
 
 import React, { useState, useCallback } from 'react';
 import {
@@ -26,6 +26,8 @@ import {
   CATEGORIES,
   GLASS,
   SHADOWS,
+  getGlass,
+  getShadows,
 } from '../utils/constants';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -35,11 +37,26 @@ const ImportScreen = ({ navigation }) => {
   const { importScreenshots, darkMode } = useScreenshots();
   const insets = useSafeAreaInsets();
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const glass = getGlass(darkMode);
+  const shadows = getShadows(darkMode);
 
   const [selectedImages, setSelectedImages] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('others');
   const [isImporting, setIsImporting] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+
+  // Theme-aware values
+  const chipInactiveBg = darkMode ? glass.background : 'rgba(0,0,0,0.04)';
+  const chipInactiveBorder = darkMode ? glass.border : 'rgba(0,0,0,0.08)';
+  const previewBg = darkMode ? '#0F0F14' : '#E5E5EA';
+  const previewBorderColor = darkMode ? glass.borderLight : 'rgba(0,0,0,0.06)';
+  const pickButtonBg = darkMode ? glass.backgroundLight : 'rgba(0,0,0,0.02)';
+  const bottomBarBg = darkMode ? glass.backgroundSolid : 'rgba(255,255,255,0.85)';
+  const bottomBarBorder = darkMode ? glass.border : 'rgba(0,0,0,0.08)';
+  const progressBg = darkMode ? glass.background : 'rgba(0,0,0,0.04)';
+  const progressBorder = darkMode ? glass.borderLight : 'rgba(0,0,0,0.06)';
+
+  const statusBarStyle = darkMode ? 'light-content' : 'dark-content';
 
   const handlePickImages = useCallback(async () => {
     try {
@@ -80,7 +97,10 @@ const ImportScreen = ({ navigation }) => {
 
   const renderPreviewItem = useCallback(
     ({ item, index }) => (
-      <View style={styles.previewContainer}>
+      <View style={[styles.previewContainer, {
+        backgroundColor: previewBg,
+        borderColor: previewBorderColor,
+      }]}>
         <Image source={{ uri: item.uri }} style={styles.previewImage} />
         <Pressable
           style={styles.removeButton}
@@ -90,12 +110,12 @@ const ImportScreen = ({ navigation }) => {
         </Pressable>
       </View>
     ),
-    [handleRemoveImage]
+    [handleRemoveImage, previewBg, previewBorderColor]
   );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -119,7 +139,10 @@ const ImportScreen = ({ navigation }) => {
           <Text style={[styles.importingProgress, { color: theme.textMuted }]}>
             {progress.current} of {progress.total}
           </Text>
-          <View style={[styles.progressBarBg, { backgroundColor: GLASS.background }]}>
+          <View style={[styles.progressBarBg, {
+            backgroundColor: progressBg,
+            borderColor: progressBorder,
+          }]}>
             <View
               style={[
                 styles.progressBarFill,
@@ -149,6 +172,7 @@ const ImportScreen = ({ navigation }) => {
                     styles.pickButton,
                     {
                       borderColor: theme.primary + '60',
+                      backgroundColor: pickButtonBg,
                       opacity: pressed ? 0.7 : 1,
                     },
                   ]}
@@ -172,8 +196,8 @@ const ImportScreen = ({ navigation }) => {
                           style={[
                             styles.categoryChip,
                             {
-                              backgroundColor: selectedCategory === cat.id ? cat.color : GLASS.background,
-                              borderColor: selectedCategory === cat.id ? cat.color : GLASS.border,
+                              backgroundColor: selectedCategory === cat.id ? cat.color : chipInactiveBg,
+                              borderColor: selectedCategory === cat.id ? cat.color : chipInactiveBorder,
                             },
                           ]}
                         >
@@ -204,7 +228,10 @@ const ImportScreen = ({ navigation }) => {
 
           {/* Bottom Action Bar */}
           {selectedImages.length > 0 && (
-            <View style={[styles.bottomBar, { backgroundColor: GLASS.backgroundSolid, borderTopColor: GLASS.border }]}>
+            <View style={[styles.bottomBar, {
+              backgroundColor: bottomBarBg,
+              borderTopColor: bottomBarBorder,
+            }]}>
               <Pressable
                 onPress={handleImport}
                 style={({ pressed }) => [
@@ -213,6 +240,7 @@ const ImportScreen = ({ navigation }) => {
                     backgroundColor: theme.primary,
                     opacity: pressed ? 0.85 : 1,
                   },
+                  shadows.glow(theme.primary),
                 ]}
               >
                 <Text style={styles.importActionText}>
@@ -262,7 +290,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: SPACING.xl,
-    backgroundColor: GLASS.backgroundLight,
   },
   pickButtonText: {
     marginTop: SPACING.sm,
@@ -302,9 +329,7 @@ const styles = StyleSheet.create({
     height: PREVIEW_SIZE * 1.5,
     borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
-    backgroundColor: '#0F0F14',
     borderWidth: 1,
-    borderColor: GLASS.borderLight,
   },
   previewImage: {
     width: '100%',
@@ -321,7 +346,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.6)',
     borderWidth: 1,
-    borderColor: GLASS.borderLight,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
   bottomBar: {
     position: 'absolute',
@@ -336,7 +361,6 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     borderRadius: GLASS.borderRadiusPill,
     alignItems: 'center',
-    ...SHADOWS.glow('#0A84FF'),
   },
   importActionText: {
     color: '#FFFFFF',
@@ -365,7 +389,6 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: GLASS.borderLight,
   },
   progressBarFill: {
     height: '100%',

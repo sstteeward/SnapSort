@@ -1,5 +1,5 @@
 // ScreenshotCard — Glass thumbnail card with frosted overlays
-// Memoized for FlatList performance
+// Theme-aware: adapts glass surfaces for Light and Dark modes. Memoized for FlatList performance.
 
 import React, { memo, useCallback, useRef } from 'react';
 import {
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, SHADOWS, CATEGORIES, GLASS } from '../utils/constants';
+import { COLORS, TYPOGRAPHY, SPACING, BORDER_RADIUS, CATEGORIES, GLASS, getGlass, getShadows } from '../utils/constants';
 import useScreenshots from '../hooks/useScreenshots';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -24,9 +24,16 @@ const CARD_HEIGHT = CARD_WIDTH * 1.4;
 const ScreenshotCard = ({ screenshot, onPress, onLongPress }) => {
   const { darkMode, toggleFavorite } = useScreenshots();
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const glass = getGlass(darkMode);
+  const shadows = getShadows(darkMode);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const category = CATEGORIES.find((c) => c.id === screenshot.category);
+
+  // Theme-aware colors
+  const cardBg = darkMode ? glass.background : 'rgba(255,255,255,0.65)';
+  const cardBorder = darkMode ? glass.border : 'rgba(0,0,0,0.08)';
+  const imageBg = darkMode ? '#0F0F14' : '#E5E5EA';
 
   const handleFavorite = useCallback(
     (e) => {
@@ -113,10 +120,13 @@ const ScreenshotCard = ({ screenshot, onPress, onLongPress }) => {
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onLongPress={onLongPress ? () => onLongPress(screenshot) : undefined}
-        style={styles.container}
+        style={[styles.container, {
+          borderColor: cardBorder,
+          backgroundColor: cardBg,
+        }, shadows.glass]}
       >
         {/* Thumbnail */}
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, { backgroundColor: imageBg }]}>
           <Image
             source={{ uri: screenshot.thumbnailUri || screenshot.uri }}
             style={styles.image}
@@ -173,14 +183,10 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.xl,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: GLASS.border,
-    backgroundColor: GLASS.background,
-    ...SHADOWS.glass,
   },
   imageContainer: {
     width: '100%',
     height: CARD_HEIGHT * 0.72,
-    backgroundColor: '#0F0F14',
   },
   image: {
     width: '100%',

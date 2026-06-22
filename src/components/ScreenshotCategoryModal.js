@@ -1,5 +1,5 @@
 // ScreenshotCategoryModal — Glass bottom sheet for categorizing a detected screenshot
-// iOS 26 Liquid Glass styling with frosted sheet, glass chips, and blur backdrop
+// iOS 26 Liquid Glass styling — theme-aware: bright glass in Light Mode, frosted dark in Dark Mode
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import {
@@ -26,6 +26,8 @@ import {
   SHADOWS,
   CATEGORIES,
   GLASS,
+  getGlass,
+  getShadows,
 } from '../utils/constants';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -34,6 +36,8 @@ const SHEET_HEIGHT = SCREEN_HEIGHT * 0.55;
 const ScreenshotCategoryModal = ({ visible, screenshotAsset, onImport, onDismiss }) => {
   const { darkMode } = useScreenshots();
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const glass = getGlass(darkMode);
+  const shadows = getShadows(darkMode);
 
   const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
@@ -91,11 +95,23 @@ const ScreenshotCategoryModal = ({ visible, screenshotAsset, onImport, onDismiss
 
   const isAndroid = Platform.OS === 'android';
 
+  // Theme-aware styles
+  const sheetBg = darkMode ? 'rgba(20,20,30,0.7)' : 'rgba(255,255,255,0.82)';
+  const sheetFallbackBg = darkMode ? 'rgba(20,20,30,0.95)' : 'rgba(255,255,255,0.95)';
+  const sheetBorderColor = darkMode ? glass.border : 'rgba(0,0,0,0.08)';
+  const handleColor = darkMode ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.15)';
+  const closeButtonBg = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const previewImageBg = darkMode ? '#0F0F14' : '#E5E5EA';
+  const dismissBg = darkMode ? glass.background : 'rgba(0,0,0,0.04)';
+  const dismissBorder = darkMode ? glass.border : 'rgba(0,0,0,0.1)';
+  const chipInactiveBg = darkMode ? glass.background : 'rgba(0,0,0,0.04)';
+  const chipInactiveBorder = darkMode ? glass.border : 'rgba(0,0,0,0.08)';
+
   const sheetContent = (
     <>
       {/* Handle */}
       <View style={styles.handleRow}>
-        <View style={styles.handle} />
+        <View style={[styles.handle, { backgroundColor: handleColor }]} />
       </View>
 
       {/* Header */}
@@ -111,17 +127,20 @@ const ScreenshotCategoryModal = ({ visible, screenshotAsset, onImport, onDismiss
             Choose a category to organize it
           </Text>
         </View>
-        <Pressable onPress={onDismiss} hitSlop={12} style={styles.closeButton}>
+        <Pressable onPress={onDismiss} hitSlop={12} style={[styles.closeButton, { backgroundColor: closeButtonBg }]}>
           <Ionicons name="close" size={20} color={theme.textMuted} />
         </Pressable>
       </View>
 
       {/* Preview */}
       {screenshotAsset?.uri && (
-        <View style={[styles.previewRow, { borderColor: GLASS.border }]}>
+        <View style={[styles.previewRow, {
+          borderColor: darkMode ? glass.border : 'rgba(0,0,0,0.08)',
+          backgroundColor: darkMode ? glass.backgroundLight : 'rgba(0,0,0,0.03)',
+        }]}>
           <Image
             source={{ uri: screenshotAsset.uri }}
-            style={styles.previewImage}
+            style={[styles.previewImage, { backgroundColor: previewImageBg }]}
             resizeMode="cover"
           />
           <View style={styles.previewInfo}>
@@ -149,9 +168,9 @@ const ScreenshotCategoryModal = ({ visible, screenshotAsset, onImport, onDismiss
                 styles.chip,
                 {
                   backgroundColor:
-                    selectedCategory === cat.id ? cat.color : GLASS.background,
+                    selectedCategory === cat.id ? cat.color : chipInactiveBg,
                   borderColor:
-                    selectedCategory === cat.id ? cat.color : GLASS.border,
+                    selectedCategory === cat.id ? cat.color : chipInactiveBorder,
                 },
               ]}
             >
@@ -204,8 +223,8 @@ const ScreenshotCategoryModal = ({ visible, screenshotAsset, onImport, onDismiss
           style={({ pressed }) => [
             styles.dismissButton,
             {
-              backgroundColor: GLASS.background,
-              borderColor: GLASS.border,
+              backgroundColor: dismissBg,
+              borderColor: dismissBorder,
               opacity: pressed ? 0.7 : 1,
             },
           ]}
@@ -226,11 +245,14 @@ const ScreenshotCategoryModal = ({ visible, screenshotAsset, onImport, onDismiss
       statusBarTranslucent
       onRequestClose={onDismiss}
     >
-      {/* Backdrop */}
+      {/* Backdrop — Light mode: very subtle, Dark mode: standard dim */}
       <Animated.View
         style={[
           styles.backdrop,
-          { opacity: backdropAnim },
+          {
+            opacity: backdropAnim,
+            backgroundColor: theme.overlay,
+          },
         ]}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} />
@@ -240,20 +262,27 @@ const ScreenshotCategoryModal = ({ visible, screenshotAsset, onImport, onDismiss
       <Animated.View
         style={[
           styles.sheet,
+          shadows.float,
           {
             transform: [{ translateY: slideAnim }],
           },
         ]}
       >
         {isAndroid ? (
-          <View style={styles.sheetFallback}>
+          <View style={[styles.sheetInner, {
+            backgroundColor: sheetFallbackBg,
+            borderColor: sheetBorderColor,
+          }]}>
             {sheetContent}
           </View>
         ) : (
           <BlurView
             intensity={GLASS.blurHeavy}
-            tint="dark"
-            style={styles.sheetBlur}
+            tint={darkMode ? 'dark' : 'light'}
+            style={[styles.sheetInner, {
+              backgroundColor: sheetBg,
+              borderColor: sheetBorderColor,
+            }]}
           >
             {sheetContent}
           </BlurView>
@@ -266,7 +295,6 @@ const ScreenshotCategoryModal = ({ visible, screenshotAsset, onImport, onDismiss
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   sheet: {
     position: 'absolute',
@@ -277,26 +305,14 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: BORDER_RADIUS.xxl,
     borderTopRightRadius: BORDER_RADIUS.xxl,
     overflow: 'hidden',
-    ...SHADOWS.float,
   },
-  sheetBlur: {
+  sheetInner: {
     paddingBottom: SPACING.xxxl,
     borderTopLeftRadius: BORDER_RADIUS.xxl,
     borderTopRightRadius: BORDER_RADIUS.xxl,
     borderWidth: 1,
     borderBottomWidth: 0,
-    borderColor: GLASS.border,
-    backgroundColor: 'rgba(20,20,30,0.7)',
     overflow: 'hidden',
-  },
-  sheetFallback: {
-    paddingBottom: SPACING.xxxl,
-    borderTopLeftRadius: BORDER_RADIUS.xxl,
-    borderTopRightRadius: BORDER_RADIUS.xxl,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    borderColor: GLASS.border,
-    backgroundColor: 'rgba(20,20,30,0.95)',
   },
   handleRow: {
     alignItems: 'center',
@@ -307,7 +323,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.3)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -342,7 +357,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   previewRow: {
     flexDirection: 'row',
@@ -353,13 +367,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     gap: SPACING.md,
     marginBottom: SPACING.lg,
-    backgroundColor: GLASS.backgroundLight,
   },
   previewImage: {
     width: 56,
     height: 56,
     borderRadius: BORDER_RADIUS.md,
-    backgroundColor: '#0F0F14',
   },
   previewInfo: {
     flex: 1,

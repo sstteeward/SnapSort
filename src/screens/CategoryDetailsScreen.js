@@ -1,5 +1,5 @@
 // CategoryDetailsScreen — iOS 26 Liquid Glass category view
-// Glass back button, tinted header, dark background
+// Theme-aware: glass back button and tinted header adapt to Light/Dark mode
 
 import React, { useCallback, useMemo } from 'react';
 import {
@@ -26,6 +26,7 @@ import {
   CATEGORIES,
   SCREEN_NAMES,
   GLASS,
+  getGlass,
 } from '../utils/constants';
 
 const CategoryDetailsScreen = ({ navigation, route }) => {
@@ -33,6 +34,7 @@ const CategoryDetailsScreen = ({ navigation, route }) => {
   const { getScreenshotsByCategory, darkMode } = useScreenshots();
   const insets = useSafeAreaInsets();
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const glass = getGlass(darkMode);
 
   const category = CATEGORIES.find((c) => c.id === categoryId);
   const screenshots = useMemo(
@@ -55,10 +57,16 @@ const CategoryDetailsScreen = ({ navigation, route }) => {
   );
 
   const isAndroid = Platform.OS === 'android';
+  const statusBarStyle = darkMode ? 'light-content' : 'dark-content';
+
+  // Theme-aware back button styling
+  const backButtonBg = darkMode ? glass.background : 'rgba(0,0,0,0.04)';
+  const backButtonBorder = darkMode ? glass.border : 'rgba(0,0,0,0.08)';
+  const backIconColor = darkMode ? '#FFFFFF' : '#000000';
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
+      <StatusBar barStyle={statusBarStyle} backgroundColor={theme.background} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -71,12 +79,18 @@ const CategoryDetailsScreen = ({ navigation, route }) => {
           hitSlop={8}
         >
           {isAndroid ? (
-            <View style={styles.backButtonFallback}>
-              <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+            <View style={[styles.backButtonInner, {
+              backgroundColor: darkMode ? 'rgba(30,30,40,0.85)' : 'rgba(0,0,0,0.04)',
+              borderColor: backButtonBorder,
+            }]}>
+              <Ionicons name="chevron-back" size={20} color={backIconColor} />
             </View>
           ) : (
-            <BlurView intensity={30} tint="dark" style={styles.backButtonBlur}>
-              <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
+            <BlurView intensity={30} tint={darkMode ? 'dark' : 'light'} style={[styles.backButtonInner, {
+              backgroundColor: backButtonBg,
+              borderColor: backButtonBorder,
+            }]}>
+              <Ionicons name="chevron-back" size={20} color={backIconColor} />
             </BlurView>
           )}
         </Pressable>
@@ -138,26 +152,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
   },
-  backButtonBlur: {
+  backButtonInner: {
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: GLASS.border,
-    backgroundColor: GLASS.background,
     overflow: 'hidden',
-  },
-  backButtonFallback: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(30,30,40,0.85)',
-    borderWidth: 1,
-    borderColor: GLASS.border,
   },
   headerInfo: {
     flex: 1,

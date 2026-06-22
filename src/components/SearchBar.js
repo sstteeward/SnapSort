@@ -1,5 +1,5 @@
 // SearchBar — Glass pill search input with iOS 26 Liquid Glass styling
-// Features: frosted glass background, search icon, animated clear button
+// Theme-aware: bright glass in Light Mode, frosted dark in Dark Mode
 
 import React, { memo, useRef, useEffect, useState } from 'react';
 import {
@@ -12,12 +12,13 @@ import {
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, TYPOGRAPHY, SPACING, GLASS } from '../utils/constants';
+import { COLORS, TYPOGRAPHY, SPACING, GLASS, getGlass } from '../utils/constants';
 import useScreenshots from '../hooks/useScreenshots';
 
 const SearchBar = ({ value, onChangeText, placeholder = 'Search screenshots...', autoFocus = false }) => {
   const { darkMode } = useScreenshots();
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const glass = getGlass(darkMode);
   const inputRef = useRef(null);
   const [animatedValue] = useState(() => new Animated.Value(0));
 
@@ -41,6 +42,11 @@ const SearchBar = ({ value, onChangeText, placeholder = 'Search screenshots...',
   });
 
   const isAndroid = Platform.OS === 'android';
+
+  // Theme-aware styling
+  const barBg = darkMode ? glass.background : 'rgba(0,0,0,0.04)';
+  const barBorder = darkMode ? glass.border : 'rgba(0,0,0,0.08)';
+  const clearButtonBg = darkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)';
 
   const content = (
     <>
@@ -67,7 +73,7 @@ const SearchBar = ({ value, onChangeText, placeholder = 'Search screenshots...',
         <Animated.View style={{ transform: [{ scale: clearScale }] }}>
           <Pressable
             onPress={handleClear}
-            style={[styles.clearButton, { backgroundColor: 'rgba(255,255,255,0.15)' }]}
+            style={[styles.clearButton, { backgroundColor: clearButtonBg }]}
             hitSlop={8}
           >
             <Ionicons name="close" size={14} color={theme.textSecondary} />
@@ -79,7 +85,10 @@ const SearchBar = ({ value, onChangeText, placeholder = 'Search screenshots...',
 
   if (isAndroid) {
     return (
-      <View style={[styles.fallback, { borderColor: GLASS.border }]}>
+      <View style={[styles.barBase, {
+        borderColor: barBorder,
+        backgroundColor: darkMode ? 'rgba(25,25,35,0.85)' : 'rgba(255,255,255,0.75)',
+      }]}>
         {content}
       </View>
     );
@@ -88,8 +97,11 @@ const SearchBar = ({ value, onChangeText, placeholder = 'Search screenshots...',
   return (
     <BlurView
       intensity={GLASS.blurLight}
-      tint="dark"
-      style={[styles.container, { borderColor: GLASS.border }]}
+      tint={darkMode ? 'dark' : 'light'}
+      style={[styles.barBase, {
+        borderColor: barBorder,
+        backgroundColor: barBg,
+      }]}
     >
       {content}
     </BlurView>
@@ -97,24 +109,13 @@ const SearchBar = ({ value, onChangeText, placeholder = 'Search screenshots...',
 };
 
 const styles = StyleSheet.create({
-  container: {
+  barBase: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: GLASS.borderRadiusPill,
     borderWidth: 1,
     paddingHorizontal: SPACING.lg,
     height: 46,
-    backgroundColor: GLASS.background,
-    overflow: 'hidden',
-  },
-  fallback: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: GLASS.borderRadiusPill,
-    borderWidth: 1,
-    paddingHorizontal: SPACING.lg,
-    height: 46,
-    backgroundColor: 'rgba(25,25,35,0.85)',
     overflow: 'hidden',
   },
   searchIcon: {

@@ -1,5 +1,5 @@
 // SettingsScreen — iOS 26 Liquid Glass preferences
-// Glass section cards, dark background, translucent surfaces
+// Theme-aware: bright glass sections in Light Mode, dark glass in Dark Mode
 
 import React, { useEffect, useState, useCallback } from 'react';
 import {
@@ -23,14 +23,24 @@ import {
   SPACING,
   BORDER_RADIUS,
   GLASS,
+  STORAGE_MODES,
+  getGlass,
 } from '../utils/constants';
 
 const SettingsScreen = () => {
-  const { darkMode, toggleDarkMode, clearAll, stats } = useScreenshots();
+  const { darkMode, toggleDarkMode, clearAll, stats, storageMode, setStorageMode } = useScreenshots();
   const insets = useSafeAreaInsets();
   const theme = darkMode ? COLORS.dark : COLORS.light;
+  const glass = getGlass(darkMode);
 
   const [storageUsed, setStorageUsed] = useState(0);
+
+  // Theme-aware styling
+  const cardBg = darkMode ? glass.background : 'rgba(255,255,255,0.65)';
+  const cardBorder = darkMode ? glass.border : 'rgba(0,0,0,0.08)';
+  const iconBoxBg = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)';
+  const switchTrackOff = darkMode ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)';
+  const dividerColor = darkMode ? glass.borderLight : 'rgba(0,0,0,0.06)';
 
   const loadStorageInfo = useCallback(async () => {
     const usage = await imageService.getStorageUsage();
@@ -60,9 +70,11 @@ const SettingsScreen = () => {
     );
   }, [clearAll, loadStorageInfo]);
 
+  const statusBarStyle = darkMode ? 'light-content' : 'dark-content';
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={statusBarStyle} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -75,10 +87,10 @@ const SettingsScreen = () => {
           <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
             APPEARANCE
           </Text>
-          <View style={[styles.card, { backgroundColor: GLASS.background, borderColor: GLASS.border }]}>
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             <View style={styles.row}>
               <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                <View style={[styles.iconBox, { backgroundColor: iconBoxBg }]}>
                   <Ionicons name={darkMode ? 'moon' : 'sunny'} size={20} color={theme.primary} />
                 </View>
                 <Text style={[styles.rowText, { color: theme.text }]}>Dark Mode</Text>
@@ -86,11 +98,86 @@ const SettingsScreen = () => {
               <Switch
                 value={darkMode}
                 onValueChange={toggleDarkMode}
-                trackColor={{ false: 'rgba(255,255,255,0.15)', true: theme.primary }}
+                trackColor={{ false: switchTrackOff, true: theme.primary }}
                 thumbColor="#FFFFFF"
-                ios_backgroundColor="rgba(255,255,255,0.15)"
+                ios_backgroundColor={switchTrackOff}
               />
             </View>
+          </View>
+        </View>
+
+        {/* Storage Mode Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
+            STORAGE MODE
+          </Text>
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+            {/* Copy Mode */}
+            <Pressable
+              onPress={() => setStorageMode(STORAGE_MODES.COPY)}
+              style={({ pressed }) => [
+                styles.row,
+                styles.rowBorder,
+                { borderBottomColor: dividerColor, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBox, { backgroundColor: iconBoxBg }]}>
+                  <Ionicons name="copy-outline" size={20} color={theme.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowText, { color: theme.text }]}>Copy Mode</Text>
+                  <Text style={[styles.rowSubtext, { color: theme.textMuted }]}>
+                    Keep original, copy into category album
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name={storageMode === STORAGE_MODES.COPY ? 'checkmark-circle' : 'ellipse-outline'}
+                size={24}
+                color={storageMode === STORAGE_MODES.COPY ? theme.primary : theme.textMuted}
+              />
+            </Pressable>
+
+            {/* Move Mode */}
+            <Pressable
+              onPress={() => {
+                if (storageMode === STORAGE_MODES.MOVE) return;
+                Alert.alert(
+                  '⚠️ Enable Move Mode?',
+                  'Move Mode will permanently remove original screenshots from your gallery after categorizing. This cannot be undone.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Enable Move Mode',
+                      style: 'destructive',
+                      onPress: () => setStorageMode(STORAGE_MODES.MOVE),
+                    },
+                  ]
+                );
+              }}
+              style={({ pressed }) => [
+                styles.row,
+                { opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBox, { backgroundColor: theme.warning + '20' }]}>
+                  <Ionicons name="arrow-forward-circle-outline" size={20} color={theme.warning} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowText, { color: theme.text }]}>Move Mode</Text>
+                  <Text style={[styles.rowSubtext, { color: theme.textMuted }]}>
+                    Remove original, save only in category album
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name={storageMode === STORAGE_MODES.MOVE ? 'checkmark-circle' : 'ellipse-outline'}
+                size={24}
+                color={storageMode === STORAGE_MODES.MOVE ? theme.warning : theme.textMuted}
+              />
+            </Pressable>
           </View>
         </View>
 
@@ -99,11 +186,11 @@ const SettingsScreen = () => {
           <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
             DATA & STORAGE
           </Text>
-          <View style={[styles.card, { backgroundColor: GLASS.background, borderColor: GLASS.border }]}>
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             {/* Storage Info */}
-            <View style={[styles.row, styles.rowBorder, { borderBottomColor: GLASS.borderLight }]}>
+            <View style={[styles.row, styles.rowBorder, { borderBottomColor: dividerColor }]}>
               <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                <View style={[styles.iconBox, { backgroundColor: iconBoxBg }]}>
                   <Ionicons name="server-outline" size={20} color={theme.primary} />
                 </View>
                 <View>
@@ -138,10 +225,10 @@ const SettingsScreen = () => {
           <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
             ABOUT
           </Text>
-          <View style={[styles.card, { backgroundColor: GLASS.background, borderColor: GLASS.border }]}>
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
             <View style={styles.row}>
               <View style={styles.rowLeft}>
-                <View style={[styles.iconBox, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                <View style={[styles.iconBox, { backgroundColor: iconBoxBg }]}>
                   <Ionicons name="information-circle-outline" size={20} color={theme.primary} />
                 </View>
                 <Text style={[styles.rowText, { color: theme.text }]}>Version</Text>
@@ -205,6 +292,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.md,
+    flex: 1,
   },
   iconBox: {
     width: 36,

@@ -1,5 +1,5 @@
 // Custom hook for accessing screenshot data and actions
-// Provides convenient derived data (favorites, recent, stats, etc.)
+// Provides convenient derived data (favorites, recent, stats, inbox, etc.)
 
 import { useContext, useMemo } from 'react';
 import { ScreenshotContext } from '../context/ScreenshotContext';
@@ -14,10 +14,18 @@ const useScreenshots = () => {
 
   const {
     screenshots,
+    inboxScreenshots,
     loading,
+    scanning,
     darkMode,
+    storageMode,
     initialized,
     importScreenshots,
+    scanGallery,
+    categorizeFromInbox,
+    dismissFromInbox,
+    dismissAllFromInbox,
+    setStorageMode,
     toggleFavorite,
     updateCategory,
     updateNotes,
@@ -86,9 +94,17 @@ const useScreenshots = () => {
     [screenshots.length, favorites.length, usedCategories.length]
   );
 
+  // Derived: inbox count
+  const inboxCount = useMemo(
+    () => inboxScreenshots.length,
+    [inboxScreenshots]
+  );
+
   return {
     // State
     screenshots,
+    inboxScreenshots,
+    inboxCount,
     favorites,
     recent,
     categoryCounts,
@@ -96,11 +112,18 @@ const useScreenshots = () => {
     usedCategories,
     stats,
     loading,
+    scanning,
     darkMode,
+    storageMode,
     initialized,
 
     // Actions
     importScreenshots,
+    scanGallery,
+    categorizeFromInbox,
+    dismissFromInbox,
+    dismissAllFromInbox,
+    setStorageMode,
     toggleFavorite,
     updateCategory,
     updateNotes,
