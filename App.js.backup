@@ -1,0 +1,134 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+
+import StackNavigator from './src/navigation/StackNavigator';
+import { ScreenshotProvider } from './src/context/ScreenshotContext';
+
+// --- Defensive dynamic imports for modules that may fail in Expo Go ---
+
+let ExpoSplashScreen = null;
+try {
+  ExpoSplashScreen = require('expo-splash-screen');
+} catch (e) {
+  console.warn('expo-splash-screen not available:', e.message);
+}
+
+let ScreenshotDetector = null;
+try {
+  ScreenshotDetector = require('./src/components/ScreenshotDetector').default;
+} catch (e) {
+  console.warn('ScreenshotDetector not available:', e.message);
+}
+
+let SplashScreenComponent = null;
+try {
+  SplashScreenComponent = require('./src/screens/SplashScreen').default;
+} catch (e) {
+  console.warn('SplashScreen not available:', e.message);
+}
+
+// Keep native splash visible while we load
+try {
+  ExpoSplashScreen?.preventAutoHideAsync();
+} catch (e) {
+  // Best-effort: if it fails, the app still works
+}
+
+// Must be called outside of components (at module level)
+// so notifications are handled even before the app fully renders
+try {
+  const { setupNotificationHandler } = require('./src/services/notificationService');
+  setupNotificationHandler();
+} catch (e) {
+  console.warn('Failed to setup notification handler:', e);
+}
+
+// Import background task definitions (must be at top level)
+try {
+  require('./src/services/backgroundScreenshotService');
+} catch (e) {
+  console.warn('Failed to load background screenshot service:', e);
+}
+
+// Error Boundary to catch render crashes and show a useful message
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('App crashed:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={errorStyles.container}>
+          <Text style={errorStyles.emoji}>⚠️</Text>
+          <Text style={errorStyles.title}>Something went wrong</Text>
+          <ScrollView style={errorStyles.scroll}>
+            <Text style={errorStyles.message}>
+              {this.state.error?.toString()}
+            </Text>
+          </ScrollView>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const errorStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+    backgroundColor: '#F8FAFC',
+  },
+  emoji: { fontSize: 48, marginBottom: 16 },
+  title: { fontSize: 20, fontWeight: '700', color: '#0F172A', marginBottom: 12 },
+  scroll: { maxHeight: 200 },
+  message: { fontSize: 13, color: '#64748B', textAlign: 'center' },
+});
+
+export default function App() {
+  const [showSplash, setShowSplash] = useState(!!SplashScreenComponent);
+
+  // Hide the native Expo splash as soon as our custom splash mounts
+  useEffect(() => {
+    try {
+      ExpoSplashScreen?.hideAsync();
+    } catch (e) {
+      // Best-effort
+    }
+  }, []);
+
+  const handleSplashFinish = useCallback(() => {
+    setShowSplash(false);
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <ScreenshotProvider>
+          <NavigationContainer>
+            <StackNavigator />
+          </NavigationContainer>
+          {ScreenshotDetector && <ScreenshotDetector />}
+        </ScreenshotProvider>
+      </SafeAreaProvider>
+      {showSplash && SplashScreenComponent && (
+        <SplashScreenComponent onFinish={handleSplashFinish} />
+      )}
+    </ErrorBoundary>
+  );
+}
+

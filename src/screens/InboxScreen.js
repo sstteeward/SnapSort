@@ -11,7 +11,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  ActivityIndicator,
+
   StatusBar,
   Alert,
   Modal,
@@ -26,6 +26,7 @@ import * as MediaLibrary from 'expo-media-library';
 
 import InboxCard from '../components/InboxCard';
 import EmptyState from '../components/EmptyState';
+import LogoSpinner from '../components/LogoSpinner';
 import useScreenshots from '../hooks/useScreenshots';
 import {
   COLORS,
@@ -266,7 +267,7 @@ const InboxScreen = () => {
         ListEmptyComponent={
           scanning ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={theme.primary} />
+              <LogoSpinner size="large" />
               <Text style={[styles.loadingText, { color: theme.textMuted }]}>
                 Scanning your gallery...
               </Text>

@@ -9,7 +9,7 @@ import {
   FlatList,
   Pressable,
   Image,
-  ActivityIndicator,
+
   StatusBar,
   Dimensions,
 } from 'react-native';
@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import * as imageService from '../services/imageService';
+import LogoSpinner from '../components/LogoSpinner';
 import useScreenshots from '../hooks/useScreenshots';
 import {
   COLORS,
@@ -132,7 +133,7 @@ const ImportScreen = ({ navigation }) => {
       {isImporting ? (
         // Importing State
         <View style={styles.importingContainer}>
-          <ActivityIndicator size="large" color={theme.primary} />
+          <LogoSpinner size="large" />
           <Text style={[styles.importingTitle, { color: theme.text }]}>
             Importing Screenshots...
           </Text>

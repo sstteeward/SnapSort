@@ -276,6 +276,7 @@ export const CATEGORIES = [
 ];
 
 export const SCREEN_NAMES = {
+  SPLASH: 'Splash',
   HOME: 'Home',
   INBOX: 'Inbox',
   CATEGORIES: 'Categories',
