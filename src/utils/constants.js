@@ -293,6 +293,19 @@ export const STORAGE_MODES = {
   MOVE: 'move',
 };
 
+// Background monitoring setting keys (persisted in SQLite settings table)
+export const BACKGROUND_SETTINGS = {
+  MONITORING_ENABLED: 'backgroundMonitoringEnabled',
+  NOTIFICATION_FREQUENCY: 'notificationFrequency',
+};
+
+// How often background scans run (OS enforces ≥15 min on both platforms)
+export const NOTIFICATION_FREQUENCIES = {
+  IMMEDIATE: 'immediate',  // ~15 min (OS minimum)
+  FIFTEEN_MIN: '15min',    // 15 min
+  THIRTY_MIN: '30min',     // 30 min
+};
+
 export const THUMBNAIL = {
   WIDTH: 300,
   QUALITY: 0.7,

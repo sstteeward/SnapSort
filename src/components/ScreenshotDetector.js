@@ -1,11 +1,14 @@
 // ScreenshotDetector — Full screenshot detection system
 // 1. Foreground: expo-screen-capture detects screenshots instantly
-// 2. Background return: Checks for new photos when app returns to foreground
-// 3. Background task: Periodic check + notification when app is closed
-// 4. Notification tap: Opens category picker for the detected screenshot
+// 2. Media library listener: fires instantly when a new photo is saved (works in background)
+// 3. Background return: Checks for new photos when app returns to foreground
+//    → iOS: Scans ALL uncategorized screenshots and shows batch banner
+//    → Android: Checks latest photo (background task handles the rest)
+// 4. Background task: Periodic check + notification when app process is killed
+// 5. Notification tap & action buttons: Opens category picker or dismisses
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { addScreenshotListener } from 'expo-screen-capture';
 import * as MediaLibrary from 'expo-media-library';
 import * as Notifications from 'expo-notifications';
@@ -16,13 +19,17 @@ import {
   registerBackgroundTask,
   saveLastKnownAssetId,
   getLastKnownAssetId,
+  getBackgroundSettings,
 } from '../services/backgroundScreenshotService';
 import {
   requestNotificationPermissions,
+  sendScreenshotNotification,
+  sendBatchScreenshotNotification,
 } from '../services/notificationService';
+import { getProcessedAssetIds } from '../services/storageService';
 
 const ScreenshotDetector = () => {
-  const { importScreenshots, scanGallery } = useScreenshots();
+  const { importScreenshots, scanGallery, backgroundMonitoringEnabled, notificationFrequency } = useScreenshots();
   const [modalVisible, setModalVisible] = useState(false);
   const [detectedAsset, setDetectedAsset] = useState(null);
 
@@ -106,7 +113,7 @@ const ScreenshotDetector = () => {
   }, []);
 
   // ==========================================
-  // 1. FOREGROUND DETECTION (instant)
+  // 1. FOREGROUND DETECTION (instant via expo-screen-capture)
   // ==========================================
   const handleScreenshotDetected = useCallback(async () => {
     const now = Date.now();
@@ -116,6 +123,8 @@ const ScreenshotDetector = () => {
 
     const asset = await fetchLatestScreenshot();
     if (asset) {
+      // Send visible notification banner instantly
+      await sendScreenshotNotification(asset);
       showDetection(asset);
     }
   }, [fetchLatestScreenshot, showDetection]);
@@ -130,7 +139,51 @@ const ScreenshotDetector = () => {
   }, [handleScreenshotDetected]);
 
   // ==========================================
-  // 2. BACKGROUND RETURN DETECTION
+  // 2. MEDIA LIBRARY LISTENER (instant — works while app process is alive,
+  //    even in the background, so users get notified without opening the app)
+  // ==========================================
+  useEffect(() => {
+    const subscription = MediaLibrary.addListener(async (event) => {
+      // Fires when photos are added/removed/modified
+      if (!event.hasIncrementalChanges && !event.insertedAssets?.length) {
+        // On Android, full-reload events fire too — check latest asset
+      }
+
+      const now = Date.now();
+      if (now - lastDetectionTime.current < 2000) return;
+
+      // Small delay to ensure the asset is fully written
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      const asset = await fetchLatestScreenshot();
+      if (!asset || asset.id === lastKnownAssetId.current) return;
+
+      // Only care about very recent photos (within 60 seconds)
+      const photoAgeMs = Date.now() - asset.creationTimeMs;
+      if (photoAgeMs > 60 * 1000) return;
+
+      // Always send the notification banner (visible even if app is backgrounded)
+      await sendScreenshotNotification(asset);
+
+      // Update tracking so we don't re-notify
+      lastDetectionTime.current = Date.now();
+      lastKnownAssetId.current = asset.id;
+      await saveLastKnownAssetId(asset.id);
+
+      // If the app is in the foreground, also show the category modal
+      if (appStateRef.current === 'active') {
+        setDetectedAsset(asset);
+        setModalVisible(true);
+      }
+    });
+
+    return () => subscription.remove();
+  }, [fetchLatestScreenshot]);
+
+  // ==========================================
+  // 3. BACKGROUND RETURN DETECTION (catch-up when resuming)
+  //    iOS: Full inbox scan for ALL uncategorized screenshots
+  //    Android: Quick latest-photo check (background task covers the rest)
   // ==========================================
   useEffect(() => {
     const handleAppStateChange = async (nextAppState) => {
@@ -147,15 +200,102 @@ const ScreenshotDetector = () => {
 
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        const asset = await fetchLatestScreenshot();
-        if (asset && asset.id !== lastKnownAssetId.current) {
-          const photoAgeMs = Date.now() - asset.creationTimeMs;
-          if (photoAgeMs < 5 * 60 * 1000) {
-            showDetection(asset);
+        if (Platform.OS === 'ios') {
+          // --- iOS: Full resume scan ---
+          // iOS cannot run true background tasks, so on resume we scan for
+          // all uncategorized screenshots and show a batch notification.
+          try {
+            const processedIds = await getProcessedAssetIds();
+            const screenshotsAlbum = await MediaLibrary.getAlbumAsync('Screenshots');
+
+            let uncategorizedCount = 0;
+            let latestNewAsset = null;
+
+            // Check Screenshots album
+            if (screenshotsAlbum) {
+              const { assets } = await MediaLibrary.getAssetsAsync({
+                album: screenshotsAlbum,
+                first: 20,
+                sortBy: [MediaLibrary.SortBy.creationTime],
+                mediaType: MediaLibrary.MediaType.photo,
+              });
+
+              for (const asset of assets) {
+                if (!processedIds.has(asset.id)) {
+                  uncategorizedCount++;
+                  if (!latestNewAsset) {
+                    latestNewAsset = asset;
+                  }
+                }
+              }
+            }
+
+            // Also check recent photos for screenshot-like images
+            if (uncategorizedCount === 0) {
+              const { assets } = await MediaLibrary.getAssetsAsync({
+                first: 10,
+                sortBy: [MediaLibrary.SortBy.creationTime],
+                mediaType: MediaLibrary.MediaType.photo,
+              });
+
+              for (const asset of assets) {
+                if (!processedIds.has(asset.id)) {
+                  const ageMs = Date.now() - asset.creationTime * 1000;
+                  if (ageMs < 30 * 60 * 1000) {
+                    uncategorizedCount++;
+                    if (!latestNewAsset) {
+                      latestNewAsset = asset;
+                    }
+                  }
+                }
+              }
+            }
+
+            // Show notification for new screenshots
+            if (uncategorizedCount > 0 && latestNewAsset) {
+              if (uncategorizedCount === 1) {
+                const info = await MediaLibrary.getAssetInfoAsync(latestNewAsset);
+                const assetData = {
+                  id: latestNewAsset.id,
+                  uri: info.localUri || info.uri,
+                  width: latestNewAsset.width,
+                  height: latestNewAsset.height,
+                  filename: latestNewAsset.filename,
+                  creationTimeMs: latestNewAsset.creationTime * 1000,
+                };
+                await sendScreenshotNotification(assetData);
+                showDetection(assetData);
+              } else {
+                await sendBatchScreenshotNotification(uncategorizedCount);
+                // Also show the latest one in the modal
+                const info = await MediaLibrary.getAssetInfoAsync(latestNewAsset);
+                showDetection({
+                  id: latestNewAsset.id,
+                  uri: info.localUri || info.uri,
+                  width: latestNewAsset.width,
+                  height: latestNewAsset.height,
+                  filename: latestNewAsset.filename,
+                  creationTimeMs: latestNewAsset.creationTime * 1000,
+                });
+              }
+            }
+          } catch (e) {
+            console.warn('iOS resume scan failed:', e);
+          }
+        } else {
+          // --- Android: Quick latest-photo check ---
+          const asset = await fetchLatestScreenshot();
+          if (asset && asset.id !== lastKnownAssetId.current) {
+            const photoAgeMs = Date.now() - asset.creationTimeMs;
+            if (photoAgeMs < 5 * 60 * 1000) {
+              // Send visible notification banner
+              await sendScreenshotNotification(asset);
+              showDetection(asset);
+            }
           }
         }
 
-        // Also refresh the inbox with a gallery scan
+        // Refresh the inbox with a gallery scan on both platforms
         try {
           scanGallery();
         } catch (e) {
@@ -168,19 +308,38 @@ const ScreenshotDetector = () => {
 
     const subscription = AppState.addEventListener('change', handleAppStateChange);
     return () => subscription.remove();
-  }, [fetchLatestScreenshot, showDetection]);
+  }, [fetchLatestScreenshot, showDetection, scanGallery]);
 
   // ==========================================
-  // 3. NOTIFICATION TAP HANDLER
+  // 4. NOTIFICATION TAP & ACTION BUTTON HANDLER
   // ==========================================
   useEffect(() => {
-    // Handle notification taps (when user taps the notification)
+    // Handle notification taps and action button presses
     const subscription = Notifications.addNotificationResponseReceivedListener(
       async (response) => {
         const data = response.notification.request.content.data;
+        const actionId = response.actionIdentifier;
+
+        // "Later" action — just dismiss, keep in inbox
+        if (actionId === 'later') {
+          return;
+        }
+
+        // "Categorize" action or default tap → open the categorization modal
         if (data?.type === 'screenshot_detected' && data?.assetId) {
-          // Fetch the specific asset from the notification
           const asset = await fetchAssetById(data.assetId);
+          if (asset) {
+            showDetection(asset);
+          }
+        } else if (data?.type === 'screenshot_batch') {
+          // Batch notification tap → trigger a gallery scan to populate inbox
+          try {
+            scanGallery();
+          } catch (e) {
+            // Non-critical
+          }
+          // Show the latest screenshot in the modal
+          const asset = await fetchLatestScreenshot();
           if (asset) {
             showDetection(asset);
           }
@@ -189,10 +348,10 @@ const ScreenshotDetector = () => {
     );
 
     return () => subscription.remove();
-  }, [fetchAssetById, showDetection]);
+  }, [fetchAssetById, fetchLatestScreenshot, showDetection, scanGallery]);
 
   // ==========================================
-  // 4. INITIALIZE: permissions, background task, last known asset
+  // 5. INITIALIZE: permissions, background task, last known asset
   // ==========================================
   useEffect(() => {
     const init = async () => {
@@ -207,8 +366,16 @@ const ScreenshotDetector = () => {
         await saveLastKnownAssetId(asset.id);
       }
 
-      // Register the background task
-      await registerBackgroundTask();
+      // Register the background task (respects monitoring settings)
+      try {
+        const settings = await getBackgroundSettings();
+        if (settings.monitoringEnabled) {
+          await registerBackgroundTask(settings.frequency);
+        }
+      } catch (e) {
+        // Fallback: register with defaults
+        await registerBackgroundTask();
+      }
     };
 
     init();

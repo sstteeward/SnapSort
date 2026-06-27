@@ -11,6 +11,7 @@ import {
   Pressable,
   Alert,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,11 +25,23 @@ import {
   BORDER_RADIUS,
   GLASS,
   STORAGE_MODES,
+  NOTIFICATION_FREQUENCIES,
   getGlass,
 } from '../utils/constants';
 
 const SettingsScreen = () => {
-  const { darkMode, toggleDarkMode, clearAll, stats, storageMode, setStorageMode } = useScreenshots();
+  const { 
+    darkMode, 
+    toggleDarkMode, 
+    clearAll, 
+    stats, 
+    storageMode, 
+    setStorageMode,
+    backgroundMonitoringEnabled,
+    setBackgroundMonitoring,
+    notificationFrequency,
+    setNotificationFrequency
+  } = useScreenshots();
   const insets = useSafeAreaInsets();
   const theme = darkMode ? COLORS.dark : COLORS.light;
   const glass = getGlass(darkMode);
@@ -102,6 +115,100 @@ const SettingsScreen = () => {
                 thumbColor="#FFFFFF"
                 ios_backgroundColor={switchTrackOff}
               />
+            </View>
+          </View>
+        </View>
+
+        {/* Background Monitoring Section */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: theme.textMuted }]}>
+            BACKGROUND MONITORING
+          </Text>
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder }]}>
+            {/* Enable/Disable Toggle */}
+            <View style={[styles.row, styles.rowBorder, { borderBottomColor: dividerColor }]}>
+              <View style={styles.rowLeft}>
+                <View style={[styles.iconBox, { backgroundColor: iconBoxBg }]}>
+                  <Ionicons name="scan-outline" size={20} color={theme.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowText, { color: theme.text }]}>Monitor in Background</Text>
+                  <Text style={[styles.rowSubtext, { color: theme.textMuted }]}>
+                    {Platform.OS === 'ios' ? 'Check for new screenshots on resume' : 'Detect screenshots while app is closed'}
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={backgroundMonitoringEnabled}
+                onValueChange={setBackgroundMonitoring}
+                trackColor={{ false: switchTrackOff, true: theme.primary }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor={switchTrackOff}
+              />
+            </View>
+
+            {/* Notification Frequency */}
+            <View style={{ opacity: backgroundMonitoringEnabled ? 1 : 0.5 }}>
+              <Pressable
+                disabled={!backgroundMonitoringEnabled}
+                onPress={() => setNotificationFrequency(NOTIFICATION_FREQUENCIES.IMMEDIATE)}
+                style={({ pressed }) => [
+                  styles.row,
+                  styles.rowBorder,
+                  { borderBottomColor: dividerColor, opacity: pressed && backgroundMonitoringEnabled ? 0.7 : 1 },
+                ]}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={[styles.iconBox, { backgroundColor: 'transparent' }]}>
+                    {/* Empty placeholder to align text */}
+                  </View>
+                  <Text style={[styles.rowText, { color: theme.text }]}>Immediate (~15 min)</Text>
+                </View>
+                <Ionicons
+                  name={notificationFrequency === NOTIFICATION_FREQUENCIES.IMMEDIATE ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={24}
+                  color={notificationFrequency === NOTIFICATION_FREQUENCIES.IMMEDIATE ? theme.primary : theme.textMuted}
+                />
+              </Pressable>
+
+              <Pressable
+                disabled={!backgroundMonitoringEnabled}
+                onPress={() => setNotificationFrequency(NOTIFICATION_FREQUENCIES.FIFTEEN_MIN)}
+                style={({ pressed }) => [
+                  styles.row,
+                  styles.rowBorder,
+                  { borderBottomColor: dividerColor, opacity: pressed && backgroundMonitoringEnabled ? 0.7 : 1 },
+                ]}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={[styles.iconBox, { backgroundColor: 'transparent' }]} />
+                  <Text style={[styles.rowText, { color: theme.text }]}>Every 15 minutes</Text>
+                </View>
+                <Ionicons
+                  name={notificationFrequency === NOTIFICATION_FREQUENCIES.FIFTEEN_MIN ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={24}
+                  color={notificationFrequency === NOTIFICATION_FREQUENCIES.FIFTEEN_MIN ? theme.primary : theme.textMuted}
+                />
+              </Pressable>
+
+              <Pressable
+                disabled={!backgroundMonitoringEnabled}
+                onPress={() => setNotificationFrequency(NOTIFICATION_FREQUENCIES.THIRTY_MIN)}
+                style={({ pressed }) => [
+                  styles.row,
+                  { opacity: pressed && backgroundMonitoringEnabled ? 0.7 : 1 },
+                ]}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={[styles.iconBox, { backgroundColor: 'transparent' }]} />
+                  <Text style={[styles.rowText, { color: theme.text }]}>Every 30 minutes</Text>
+                </View>
+                <Ionicons
+                  name={notificationFrequency === NOTIFICATION_FREQUENCIES.THIRTY_MIN ? 'checkmark-circle' : 'ellipse-outline'}
+                  size={24}
+                  color={notificationFrequency === NOTIFICATION_FREQUENCIES.THIRTY_MIN ? theme.primary : theme.textMuted}
+                />
+              </Pressable>
             </View>
           </View>
         </View>

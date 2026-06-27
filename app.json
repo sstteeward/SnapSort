@@ -5,27 +5,25 @@
     "scheme": "snapsort",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/splash-logo-light.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.ssttewards.snapsort",
+      "bundleIdentifier": "com.snapsort.app",
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch"
         ],
-        "NSPhotoLibraryUsageDescription": "Allow SnapSort to access your photos to detect and import screenshots.",
+        "NSPhotoLibraryUsageDescription": "SnapSort needs access to your photos to organize screenshots.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.ssttewards.snapsort",
+      "package": "com.snapsort.app",
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/splash-logo-light.png"
       },
       "permissions": [
         "android.permission.READ_MEDIA_IMAGES",
@@ -46,7 +44,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash-logo.png",
+          "image": "./assets/splash-logo-light.png",
           "resizeMode": "contain",
           "backgroundColor": "#000000"
         }
@@ -56,7 +54,7 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow SnapSort to access your photos to detect and import screenshots.",
+          "photosPermission": "SnapSort needs access to your photos to organize screenshots.",
           "isAccessMediaLocationEnabled": true
         }
       ]

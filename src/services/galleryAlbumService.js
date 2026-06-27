@@ -90,7 +90,9 @@ export const addToAlbum = async (assetId, categoryId) => {
 
 /**
  * Move an asset to a category album (Move Mode).
- * The original asset is removed from its current location after copying.
+ * The original asset is moved from its current location to the category album.
+ * On iOS: uses the native move flag in createAlbumAsync/addAssetsToAlbumAsync.
+ * On Android: copies to the target album, then removes from the source album.
  * @param {string} assetId - MediaLibrary asset ID
  * @param {string} categoryId - Category to file under
  * @returns {object} { success, albumName }
@@ -106,13 +108,46 @@ export const moveToAlbum = async (assetId, categoryId) => {
 
     let album = await MediaLibrary.getAlbumAsync(albumName);
 
-    if (!album) {
-      // Create album with this asset (this moves it on iOS)
-      album = await MediaLibrary.createAlbumAsync(albumName, asset, true);
-      albumCache.set(albumName, album);
+    if (Platform.OS === 'ios') {
+      // iOS: the third parameter (false = move, not copy)
+      if (!album) {
+        album = await MediaLibrary.createAlbumAsync(albumName, asset, false);
+        albumCache.set(albumName, album);
+      } else {
+        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+      }
     } else {
-      // Add to album, then remove from original location
-      await MediaLibrary.addAssetsToAlbumAsync([asset], album, true);
+      // Android: the copy flag is ignored by the OS, so we copy first, then
+      // remove from the source album to simulate a move.
+      if (!album) {
+        album = await MediaLibrary.createAlbumAsync(albumName, asset, false);
+        albumCache.set(albumName, album);
+      } else {
+        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+      }
+
+      // Remove asset from its original/source album(s) to complete the move.
+      // Get all albums this asset belongs to and remove it from non-target ones.
+      try {
+        const allAlbums = await MediaLibrary.getAlbumsAsync();
+        for (const srcAlbum of allAlbums) {
+          if (srcAlbum.id === album.id) continue; // Skip the target album
+          if (srcAlbum.title.startsWith(ALBUM_PREFIX)) continue; // Skip other SnapSort albums
+          // Check if this asset is in the source album
+          const { assets: albumAssets } = await MediaLibrary.getAssetsAsync({
+            album: srcAlbum,
+            first: 1000,
+            mediaType: MediaLibrary.MediaType.photo,
+          });
+          const found = albumAssets.find((a) => a.id === assetId);
+          if (found) {
+            await MediaLibrary.removeAssetsFromAlbumAsync([asset], srcAlbum);
+          }
+        }
+      } catch (removeError) {
+        // Non-critical: the copy to the target album already succeeded
+        console.warn('Could not remove from source album:', removeError);
+      }
     }
 
     return { success: true, albumName, album };

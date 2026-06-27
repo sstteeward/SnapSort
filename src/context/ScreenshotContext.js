@@ -7,7 +7,16 @@ import * as storageService from '../services/storageService';
 import * as imageService from '../services/imageService';
 import * as galleryScannerService from '../services/galleryScannerService';
 import * as galleryAlbumService from '../services/galleryAlbumService';
-import { CATEGORIES, STORAGE_MODES } from '../utils/constants';
+import {
+  updateBackgroundSettings,
+  getBackgroundSettings,
+} from '../services/backgroundScreenshotService';
+import {
+  CATEGORIES,
+  STORAGE_MODES,
+  BACKGROUND_SETTINGS,
+  NOTIFICATION_FREQUENCIES,
+} from '../utils/constants';
 
 // --- Initial State ---
 const initialState = {
@@ -18,6 +27,8 @@ const initialState = {
   searchQuery: '',
   darkMode: true,
   storageMode: STORAGE_MODES.COPY,
+  backgroundMonitoringEnabled: true,
+  notificationFrequency: NOTIFICATION_FREQUENCIES.FIFTEEN_MIN,
   initialized: false,
 };
 
@@ -36,6 +47,8 @@ const ACTIONS = {
   SET_INBOX: 'SET_INBOX',
   REMOVE_FROM_INBOX: 'REMOVE_FROM_INBOX',
   SET_STORAGE_MODE: 'SET_STORAGE_MODE',
+  SET_BACKGROUND_MONITORING: 'SET_BACKGROUND_MONITORING',
+  SET_NOTIFICATION_FREQUENCY: 'SET_NOTIFICATION_FREQUENCY',
 };
 
 // --- Reducer ---
@@ -96,6 +109,12 @@ const screenshotReducer = (state, action) => {
     case ACTIONS.SET_STORAGE_MODE:
       return { ...state, storageMode: action.payload };
 
+    case ACTIONS.SET_BACKGROUND_MONITORING:
+      return { ...state, backgroundMonitoringEnabled: action.payload };
+
+    case ACTIONS.SET_NOTIFICATION_FREQUENCY:
+      return { ...state, notificationFrequency: action.payload };
+
     default:
       return state;
   }
@@ -126,6 +145,15 @@ export const ScreenshotProvider = ({ children }) => {
         const darkModeSetting = await storageService.getSetting('darkMode', 'true');
         if (darkModeSetting === 'false') {
           dispatch({ type: ACTIONS.TOGGLE_DARK_MODE });
+        }
+
+        // Load background monitoring settings
+        try {
+          const bgSettings = await getBackgroundSettings();
+          dispatch({ type: ACTIONS.SET_BACKGROUND_MONITORING, payload: bgSettings.monitoringEnabled });
+          dispatch({ type: ACTIONS.SET_NOTIFICATION_FREQUENCY, payload: bgSettings.frequency });
+        } catch (e) {
+          console.warn('Failed to load background settings:', e);
         }
 
         dispatch({ type: ACTIONS.SET_INITIALIZED });
@@ -297,6 +325,34 @@ export const ScreenshotProvider = ({ children }) => {
     }
   }, []);
 
+  /**
+   * Enable or disable background monitoring.
+   * Persists to both SQLite and the background service JSON state.
+   */
+  const setBackgroundMonitoring = useCallback(async (enabled) => {
+    try {
+      await storageService.setSetting(BACKGROUND_SETTINGS.MONITORING_ENABLED, String(enabled));
+      await updateBackgroundSettings({ monitoringEnabled: enabled });
+      dispatch({ type: ACTIONS.SET_BACKGROUND_MONITORING, payload: enabled });
+    } catch (error) {
+      console.error('Failed to set background monitoring:', error);
+    }
+  }, []);
+
+  /**
+   * Update the notification scan frequency.
+   * Persists and re-registers the background task with the new interval.
+   */
+  const setNotificationFrequency = useCallback(async (freq) => {
+    try {
+      await storageService.setSetting(BACKGROUND_SETTINGS.NOTIFICATION_FREQUENCY, freq);
+      await updateBackgroundSettings({ frequency: freq });
+      dispatch({ type: ACTIONS.SET_NOTIFICATION_FREQUENCY, payload: freq });
+    } catch (error) {
+      console.error('Failed to set notification frequency:', error);
+    }
+  }, []);
+
   const toggleFavorite = useCallback(async (id) => {
     try {
       const screenshot = state.screenshots.find((s) => s.id === id);
@@ -417,6 +473,8 @@ export const ScreenshotProvider = ({ children }) => {
     dismissFromInbox,
     dismissAllFromInbox,
     setStorageMode,
+    setBackgroundMonitoring,
+    setNotificationFrequency,
     toggleFavorite,
     updateCategory,
     updateNotes,
